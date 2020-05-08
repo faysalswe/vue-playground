@@ -2,6 +2,8 @@ import Vue from "vue";
 import VueRouter from "vue-router";
 import Home from "../views/Home.vue";
 import Form from "../views/Form.vue";
+import Posts from "../views/Posts.vue";
+import Post from "../views/Post.vue";
 
 Vue.use(VueRouter);
 
@@ -23,6 +25,14 @@ const routes = [
   {
     path: "/form",
     component: Form
+  },
+  {
+    path: "/posts",
+    component: Posts
+  },
+  {
+    path: "/post/:id",
+    component: Post
   }
 ];
 
