@@ -12,7 +12,7 @@
       <input type="text" v-model="person.address" />
 
       <button type="submit">save</button>
-      <button type="button" @click="clear">clear</button>
+      <button type="reset">clear</button>
     </form>
     <div>
       <table>
@@ -58,14 +58,14 @@ export default {
     };
   },
   methods: {
-    create() {
+    create($event) {
       if (this.person.id <= 0) {
         this.personList.push({ ...this.person });
       } else {
         const index = this.personList.findIndex(x => x.id === this.person.id);
-        this.personList[index] = this.person;
+        this.personList[index] = { ...this.person };
       }
-      this.clear();
+      console.log($event.target.reset());
     },
     update(id) {
       const person = this.personList.find(x => x.id === id);
@@ -74,15 +74,14 @@ export default {
     remove(id) {
       const index = this.personList.findIndex(x => x.id === id);
       this.personList = this.personList.slice(index, 1);
-    },
-    clear() {
-      this.person = {};
     }
   }
 };
 </script>
-
-<style>
+<style scoped>
+input {
+  border: 2px solid #42b983;
+}
 table {
   margin-top: 5rem;
   width: 100%;
@@ -96,8 +95,12 @@ td {
   border: 1px solid #42b983;
 }
 button {
-  background: transparent;
-  color: #42b983;
-  border: 1px solid teal;
+  background: #42b983;
+  border: none;
+  box-shadow: 0 4px 8px 0 rgba(0, 0, 0, 0.2);
+  transition: 0.3s;
+  border-radius: 2px;
+  margin: 1px;
+  padding: 0.2rem 0.5rem;
 }
 </style>

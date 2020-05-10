@@ -4,6 +4,10 @@ import Home from "../views/Home.vue";
 import Form from "../views/Form.vue";
 import Posts from "../views/Posts.vue";
 import Post from "../views/Post.vue";
+import NestedRoute from "../views/NestedRoute.vue";
+import ScrumPoker from "../views/ScrumPoker.vue";
+import CreateRoom from "../views/CreateRoom.vue";
+import JoinRoom from "../views/JoinRoom.vue";
 
 Vue.use(VueRouter);
 
@@ -33,6 +37,28 @@ const routes = [
   {
     path: "/post/:id",
     component: Post
+  },
+  {
+    path: "/create-room",
+    component: CreateRoom
+  },
+  {
+    path: "/join-room/:roomId",
+    component: JoinRoom
+  },
+  {
+    path: "/scrum-poker/:roomId/:userId",
+    component: ScrumPoker
+  },
+  {
+    path: "/nested",
+    component: NestedRoute,
+    children: [
+      {
+        path: ":id",
+        component: Post
+      }
+    ]
   }
 ];
 

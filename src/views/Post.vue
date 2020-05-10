@@ -5,7 +5,7 @@
     <div>
       <div class="comment" v-for="(comment, index) in comments" :key="index">
         <div class="body">{{ comment.body }}</div>
-        <div class="user">{{ `${comment.name}(${comment.email})` }}</div>
+        <div class="user">{{ `👉 ${comment.name}(${comment.email})` }}</div>
       </div>
     </div>
   </div>
@@ -14,22 +14,35 @@
 <script>
 export default {
   name: "post",
-  props: ["id"],
   data() {
     return {
       post: {},
       comments: []
     };
   },
+  watch: {
+    $route(to, from) {
+      if (from.params.id !== to.params.id) {
+        this.getPost();
+      }
+    }
+  },
   created() {
-    fetch(`https://jsonplaceholder.typicode.com/posts/${this.$route.params.id}`)
-      .then(res => res.json())
-      .then(data => (this.post = data));
-    fetch(
-      `https://jsonplaceholder.typicode.com/posts/${this.$route.params.id}/comments`
-    )
-      .then(res => res.json())
-      .then(data => (this.comments = data));
+    this.getPost();
+  },
+  methods: {
+    getPost() {
+      fetch(
+        `https://jsonplaceholder.typicode.com/posts/${this.$route.params.id}`
+      )
+        .then(res => res.json())
+        .then(data => (this.post = data));
+      fetch(
+        `https://jsonplaceholder.typicode.com/posts/${this.$route.params.id}/comments`
+      )
+        .then(res => res.json())
+        .then(data => (this.comments = data));
+    }
   }
 };
 </script>
@@ -45,16 +58,10 @@ p {
   color: lightgray;
   text-align: right;
 }
-
-.user::before {
-  content: "---";
-}
-
 .comment {
   text-align: left;
   padding: 1rem 7rem;
 }
-
 .body {
   text-align: left;
 }

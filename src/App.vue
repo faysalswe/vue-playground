@@ -4,7 +4,11 @@
       <router-link to="/">Home</router-link> |
       <router-link to="/about">About</router-link> |
       <router-link to="/posts">Posts</router-link> |
-      <router-link to="/form">CRUD</router-link>
+      <router-link to="/nested">Nested route</router-link> |
+      <router-link to="/form">crud</router-link> |
+      <router-link to="/scrum-poker">scrum poker</router-link> |
+      <router-link to="/create-room">Create room</router-link> |
+      <router-link to="/join-room/001">Join room</router-link>
     </div>
     <router-view />
   </div>
