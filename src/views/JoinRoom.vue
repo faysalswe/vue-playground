@@ -25,15 +25,23 @@ export default {
     joinRoom($event) {
       $event.preventDefault();
       const ref = database.ref(`rooms/${this.$route.params.roomId}`);
+      if (!this.name && !this.userId) return;
       ref.once("value", res => {
         this.room = res.val();
-        this.room.userPoints.push({
-          userId: this.userId,
-          name: this.name,
-          isAdmin: false,
-          isEdit: false,
-          point: ""
-        });
+        const index = this.room.userPoints.findIndex(
+          x => x.userId.toLowerCase() == this.userId.toLowerCase().trim()
+        );
+        if (index >= 0) {
+          this.room.userPoints[index].name = this.name;
+        } else {
+          this.room.userPoints.push({
+            userId: this.userId,
+            name: this.name,
+            isAdmin: false,
+            isEdit: false,
+            point: ""
+          });
+        }
         ref.update({ ...this.room });
       });
       this.$router.push({

@@ -12,12 +12,7 @@
         </div>
       </div>
     </div>
-    <span
-      v-clipboard:copy="fullUrl"
-      v-clipboard:success="onCopy"
-      v-clipboard:error="onError"
-      class="copy"
-    >
+    <span v-clipboard:copy="fullUrl" class="copy">
       📋 Copy!
     </span>
     <div class="container">

@@ -24,6 +24,7 @@ export default {
   methods: {
     createRoom($event) {
       $event.preventDefault();
+      if (!this.name && !this.userId) return;
       const ref = roomRef.push({
         userPoints: [
           {
