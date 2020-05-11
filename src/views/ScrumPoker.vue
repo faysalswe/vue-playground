@@ -12,53 +12,76 @@
         </div>
       </div>
     </div>
-    <span v-clipboard:copy="fullUrl" class="copy">
-      📋 Invitation link!
-    </span>
+    <div class="container">
+      <span v-clipboard:copy="fullUrl" class="icon-btn-lg">
+        📋
+      </span>
+      <span v-if="isAdminUser" class="icon-btn-lg" @click="cleanScores">
+        🔄
+      </span>
+      <span v-if="isAdminUser" class="icon-btn-lg" @click="toggleShowPoint">
+        {{ room.isShowPoint ? "🔓" : "🔒" }}
+      </span>
+      <form v-if="isAdminUser" @submit="final($event)">
+        <input
+          type="text"
+          v-model="card.name"
+          placeholder="Name"
+          name="name"
+          id="name"
+        />
+        <input
+          type="number"
+          v-model="card.point"
+          placeholder="Point"
+          name="point"
+          id="point"
+        />
+        <button type="submit">Final</button>
+      </form>
+    </div>
+
     <div class="container">
       <div class="summury-points">
         <h4>
           Current card points
-          <div
-            v-if="isAdminUser"
-            style="cursor: pointer;"
-            @click="toggleShowPoint()"
-          >
-            {{ room.isShowPoint ? "🔓" : "🔒" }}
-          </div>
         </h4>
         <div class="list" v-for="(user, index) in room.userPoints" :key="index">
-          <span @click="toggleAdmin(user)">
-            {{ user.isAdmin ? "🎩" : "👤" }} {{ user.name }}
+          <span class="user icon-btn-sm" @click="toggleAdmin(user)">
+            {{ user.isAdmin ? "👤" : "👥" }}
           </span>
-          <span v-if="user.isEdit">
-            <input type="text" @blur="save(user, $event)" :value="user.point" />
+          <span class="name">
+            {{ user.name }}
           </span>
-          <span @click="onEdit(user)" v-if="!user.isEdit">
-            {{ user.point > 0 ? (room.isShowPoint ? user.point : "🔒") : "⏳" }}
+          <span v-if="user.isEdit" class="point">
+            <input
+              class="manual-input"
+              type="number"
+              @blur="save(user, $event)"
+              :value="user.point"
+            />
+          </span>
+          <span
+            v-if="!user.isEdit"
+            class="point icon-btn-sm"
+            @click="onEdit(user, index)"
+          >
+            {{
+              user.point > 0 ? (room.isShowPoint ? user.point : "🔒") : "⌛️"
+            }}
+          </span>
+          <span
+            v-if="isAdminUser"
+            class="icon-btn-sm remove"
+            @click="remove(user)"
+          >
+            ❌
           </span>
         </div>
       </div>
 
       <div class="user-points">
         <h4>Card points summary</h4>
-        <form v-if="isAdminUser" @submit="addFinalPoint($event)">
-          <input
-            type="text"
-            v-model="card.name"
-            placeholder="Name"
-            name="name"
-            id="name"
-          />
-          <input
-            type="number"
-            v-model="card.point"
-            placeholder="Point"
-            name="point"
-            id="point"
-          />
-          <button type="submit">Finalize sizing</button>
-        </form>
         <div
           class="list"
           v-for="(card, index) in room.scoredCards"
@@ -97,7 +120,7 @@ export default {
       );
       this.isAdminUser = user ? true : false;
     });
-    this.fullUrl = `${window.location.origin}/#/join-room/${this.$route.params.roomId}`;
+    this.fullUrl = `${window.location.origin}/#/${this.$route.params.roomId}`;
   },
   methods: {
     givePoint(point) {
@@ -111,9 +134,9 @@ export default {
         ref.update({ ...this.room });
       });
     },
-    addFinalPoint($event) {
+    final($event) {
       $event.preventDefault();
-      if (!this.card.name && !this.card.pint) return;
+      if (!this.card.name || !this.card.point) return;
       const ref = database.ref(`rooms/${this.$route.params.roomId}`);
       ref.once("value", res => {
         this.room = res.val();
@@ -130,7 +153,6 @@ export default {
         this.room.isShowPoint = false;
         ref.update({ ...this.room });
       });
-      // clear
       this.card = {};
     },
     onEdit(user) {
@@ -167,10 +189,32 @@ export default {
         ref.once("value", res => {
           this.room = res.val();
           const index = this.room.userPoints.findIndex(
-            x => x.userId.toLowerCase() == user.userId.toLowerCase()
+            x => x.userId == user.userId
           );
           this.room.userPoints[index].isAdmin = !this.room.userPoints[index]
             .isAdmin;
+          ref.update({ ...this.room });
+        });
+      }
+    },
+    cleanScores() {
+      const ref = database.ref(`rooms/${this.$route.params.roomId}`);
+      ref.once("value", res => {
+        this.room = res.val();
+        this.room.userPoints.forEach(x => (x.point = ""));
+        this.room.isShowPoint = false;
+        ref.update({ ...this.room });
+      });
+    },
+    remove(user) {
+      if (this.isAdminUser && user.userId != this.$route.params.userId) {
+        const ref = database.ref(`rooms/${this.$route.params.roomId}`);
+        ref.once("value", res => {
+          this.room = res.val();
+          const index = this.room.userPoints.findIndex(
+            x => x.userId == user.userId
+          );
+          this.room.userPoints.splice(index, 1);
           ref.update({ ...this.room });
         });
       }
@@ -180,9 +224,21 @@ export default {
 </script>
 
 <style>
-.copy {
+.manual-input {
+  max-width: 35px;
+  height: 0.9rem;
+  font-size: 15px;
+}
+.icon-btn-sm {
+  font-size: 13px;
   cursor: pointer;
 }
+
+.icon-btn-lg {
+  cursor: pointer;
+  font-size: 20px;
+}
+
 .container {
   display: flex;
   justify-content: space-around;
@@ -195,22 +251,40 @@ export default {
   width: 50%;
 }
 
+@media only screen and (max-width: 600px) {
+  .summury-points,
+  .user-points {
+    width: 100%;
+  }
+  .card {
+    border-radius: 3px;
+    margin: none;
+    padding: none;
+  }
+}
 .list {
+  display: flex;
+  justify-content: space-between;
   box-shadow: 0px 1px 2px 1px rgba(0, 0, 0, 0.2);
   transition: 0.3s;
-  border-radius: 1px; /* 5px rounded corners */
+  border-radius: 1px;
   margin: 0.1rem;
   padding: 0.5rem;
   text-align: left;
 }
 
-.list > :nth-child(1) {
-  display: inline-block;
-  width: 65%;
+.user {
+  flex-basis: 6%;
 }
-
-.list > :nth-child(2) {
-  width: 35%;
+.name {
+  flex-basis: 60%;
+}
+.point {
+  flex-basis: 30%;
+  font-weight: bolder;
+}
+.remove {
+  flex-basis: 4%;
 }
 
 form {
@@ -223,9 +297,7 @@ form > input,
 button {
   box-sizing: border-box;
   width: 100%;
-  height: 2.2rem;
-  margin: 0px 5px;
-  margin-bottom: 4px;
+  height: 1.9rem;
   border: 1px solid #42b983;
 }
 
@@ -238,14 +310,14 @@ button {
   font-size: 16px;
   box-shadow: 0px 1px 2px 1px rgba(0, 0, 0, 0.2);
   transition: 0.3s;
-  border-radius: 2px; /* 5px rounded corners */
+  border-radius: 2px;
   cursor: pointer;
 }
 
 .card {
   box-shadow: 0 4px 8px 0 rgba(0, 0, 0, 0.2);
   transition: 0.3s;
-  border-radius: 5px; /* 5px rounded corners */
+  border-radius: 5px;
   margin: 1rem;
   padding: 2rem;
   cursor: pointer;

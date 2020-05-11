@@ -1,26 +1,21 @@
 import Vue from "vue";
 import VueRouter from "vue-router";
 import ScrumPoker from "../views/ScrumPoker.vue";
-import CreateRoom from "../views/CreateRoom.vue";
-import JoinRoom from "../views/JoinRoom.vue";
+import NewUser from "../views/NewUser.vue";
 
 Vue.use(VueRouter);
 
 const routes = [
   {
     path: "/",
-    redirect: "/create-room"
+    component: NewUser
   },
   {
-    path: "/create-room",
-    component: CreateRoom
+    path: "/:roomId",
+    component: NewUser
   },
   {
-    path: "/join-room/:roomId",
-    component: JoinRoom
-  },
-  {
-    path: "/scrum-poker/:roomId/:userId",
+    path: "/:roomId/:userId",
     component: ScrumPoker
   }
 ];
