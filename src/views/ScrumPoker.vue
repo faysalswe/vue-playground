@@ -13,7 +13,7 @@
       </div>
     </div>
     <span v-clipboard:copy="fullUrl" class="copy">
-      📋 Copy!
+      📋 Invitation link!
     </span>
     <div class="container">
       <div class="summury-points">
@@ -28,7 +28,9 @@
           </div>
         </h4>
         <div class="list" v-for="(user, index) in room.userPoints" :key="index">
-          <span> {{ user.name }} </span>
+          <span @click="toggleAdmin(user)">
+            {{ user.isAdmin ? "🎩" : "👤" }} {{ user.name }}
+          </span>
           <span v-if="user.isEdit">
             <input type="text" @blur="save(user, $event)" :value="user.point" />
           </span>
@@ -40,7 +42,7 @@
 
       <div class="user-points">
         <h4>Card points summary</h4>
-        <form @submit="addFinalPoint($event)">
+        <form v-if="isAdminUser" @submit="addFinalPoint($event)">
           <input
             type="text"
             v-model="card.name"
@@ -158,6 +160,20 @@ export default {
         this.room.isShowPoint = !this.room.isShowPoint;
         ref.update({ ...this.room });
       });
+    },
+    toggleAdmin(user) {
+      if (this.isAdminUser && user.userId != this.$route.params.userId) {
+        const ref = database.ref(`rooms/${this.$route.params.roomId}`);
+        ref.once("value", res => {
+          this.room = res.val();
+          const index = this.room.userPoints.findIndex(
+            x => x.userId.toLowerCase() == user.userId.toLowerCase()
+          );
+          this.room.userPoints[index].isAdmin = !this.room.userPoints[index]
+            .isAdmin;
+          ref.update({ ...this.room });
+        });
+      }
     }
   }
 };
@@ -190,11 +206,11 @@ export default {
 
 .list > :nth-child(1) {
   display: inline-block;
-  width: 80%;
+  width: 65%;
 }
 
 .list > :nth-child(2) {
-  width: 20%;
+  width: 35%;
 }
 
 form {
