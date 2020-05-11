@@ -1,6 +1,5 @@
 <template>
   <div>
-    <input type="text" v-model="fullUrl" />
     <div class="container">
       <div
         class="card"
@@ -13,13 +12,24 @@
         </div>
       </div>
     </div>
-
+    <span
+      v-clipboard:copy="fullUrl"
+      v-clipboard:success="onCopy"
+      v-clipboard:error="onError"
+      class="copy"
+    >
+      📋 Copy!
+    </span>
     <div class="container">
       <div class="summury-points">
         <h4>
           Current card points
-          <div style="cursor: pointer;" @click="toggleShowPoint()">
-            {{ this.room.isShowPoint ? "🔓" : "🔒" }}
+          <div
+            v-if="isAdminUser"
+            style="cursor: pointer;"
+            @click="toggleShowPoint()"
+          >
+            {{ room.isShowPoint ? "🔓" : "🔒" }}
           </div>
         </h4>
         <div class="list" v-for="(user, index) in room.userPoints" :key="index">
@@ -28,13 +38,7 @@
             <input type="text" @blur="save(user, $event)" :value="user.point" />
           </span>
           <span @click="onEdit(user)" v-if="!user.isEdit">
-            {{
-              user.point > 0
-                ? this.room.isShowPoint
-                  ? user.point
-                  : "🔒"
-                : "⏳"
-            }}
+            {{ user.point > 0 ? (room.isShowPoint ? user.point : "🔒") : "⏳" }}
           </span>
         </div>
       </div>
@@ -77,6 +81,7 @@ export default {
   data() {
     return {
       fullUrl: "",
+      isAdminUser: false,
       room: {
         userPoints: [],
         scoredCards: [],
@@ -90,7 +95,10 @@ export default {
     const ref = database.ref(`rooms/${this.$route.params.roomId}`);
     ref.on("value", snapshot => {
       this.room = snapshot.val();
-      console.log(this.room);
+      const user = this.room.userPoints.find(
+        x => x.userId == this.$route.params.userId && x.isAdmin == true
+      );
+      this.isAdminUser = user ? true : false;
     });
     this.fullUrl = `${window.location.origin}/#/join-room/${this.$route.params.roomId}`;
   },
@@ -108,16 +116,19 @@ export default {
     },
     addFinalPoint($event) {
       $event.preventDefault();
+      if (!this.card.name && !this.card.pint) return;
       const ref = database.ref(`rooms/${this.$route.params.roomId}`);
       ref.once("value", res => {
         this.room = res.val();
         this.room.scoredCards.push({ ...this.card });
+
         this.room.scoredCards[0].point = this.room.scoredCards.reduce(
           (total, item) => {
             return total + Number(item.point);
           },
-          0
+          -this.room.scoredCards[0].point
         );
+
         this.room.userPoints.forEach(x => (x.point = ""));
         this.room.isShowPoint = false;
         ref.update({ ...this.room });
@@ -159,6 +170,7 @@ export default {
 
 <style>
 .copy {
+  cursor: pointer;
 }
 .container {
   display: flex;
@@ -200,9 +212,14 @@ form > input,
 button {
   box-sizing: border-box;
   width: 100%;
-  height: 1.9rem;
-  margin: 5px 5px;
+  height: 2.2rem;
+  margin: 0px 5px;
+  margin-bottom: 4px;
   border: 1px solid #42b983;
+}
+
+input {
+  padding-left: 0.5rem;
 }
 
 button {
@@ -211,6 +228,7 @@ button {
   box-shadow: 0px 1px 2px 1px rgba(0, 0, 0, 0.2);
   transition: 0.3s;
   border-radius: 2px; /* 5px rounded corners */
+  cursor: pointer;
 }
 
 .card {
