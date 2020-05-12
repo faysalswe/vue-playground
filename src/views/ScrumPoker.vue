@@ -22,7 +22,7 @@
       <span v-if="isAdminUser" class="icon-btn-lg" @click="toggleShowPoint">
         {{ room.isShowPoint ? "🔓" : "🔒" }}
       </span>
-      <form v-if="isAdminUser" @submit="final($event)">
+      <form class="lg-md-display" v-if="isAdminUser" @submit="final($event)">
         <input
           type="text"
           v-model="card.name"
@@ -90,6 +90,24 @@
 
       <div v-if="room.scoredCards.length" class="user-points">
         <h4>Card points summary</h4>
+        <form class="mobile" v-if="isAdminUser" @submit="final($event)">
+          <input
+            type="text"
+            v-model="card.name"
+            placeholder="Name"
+            name="name"
+            id="name"
+          />
+          <input
+            type="number"
+            v-model="card.point"
+            placeholder="Point"
+            name="point"
+            id="point"
+          />
+          <button type="submit">Final</button>
+        </form>
+
         <div
           class="list"
           v-for="(card, index) in room.scoredCards"
@@ -240,6 +258,9 @@ export default {
 </script>
 
 <style>
+.mobile {
+  display: none;
+}
 .marked-row {
   border-left: 5px solid #42b983;
 }
@@ -279,9 +300,15 @@ export default {
     margin: 0.5rem !important;
     padding: 1rem 1.5rem !important;
   }
-
-  form {
-    margin-top: 10px;
+  .lg-md-display {
+    display: none;
+  }
+  .mobile {
+    display: block;
+    margin-bottom: 10px;
+  }
+  form > * {
+    margin-bottom: 10px;
   }
 }
 .list {
