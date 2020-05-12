@@ -42,11 +42,16 @@
     </div>
 
     <div class="container">
-      <div class="summury-points">
+      <div v-if="room.userPoints.length" class="summury-points">
         <h4>
           Current card points
         </h4>
-        <div class="list" v-for="(user, index) in room.userPoints" :key="index">
+        <div
+          class="list"
+          v-for="(user, index) in room.userPoints"
+          :key="index"
+          :class="{ 'marked-row': user.userId == $route.params.userId }"
+        >
           <span class="user icon-btn-sm" @click="toggleAdmin(user)">
             {{ user.isAdmin ? "👤" : "👥" }}
           </span>
@@ -62,10 +67,13 @@
             />
           </span>
           <span
-            v-if="!user.isEdit"
+            v-else-if="!user.isEdit && user.userId == $route.params.userId"
             class="point icon-btn-sm"
             @click="onEdit(user, index)"
           >
+            {{ user.point ? user.point : "⌛️" }}
+          </span>
+          <span v-else class="point icon-btn-sm" @click="onEdit(user, index)">
             {{
               user.point > 0 ? (room.isShowPoint ? user.point : "🔒") : "⌛️"
             }}
@@ -80,12 +88,13 @@
         </div>
       </div>
 
-      <div class="user-points">
+      <div v-if="room.scoredCards.length" class="user-points">
         <h4>Card points summary</h4>
         <div
           class="list"
           v-for="(card, index) in room.scoredCards"
           :key="index"
+          :class="{ 'marked-row': index === 0 }"
         >
           <span>{{ card.name }}</span> <span>{{ card.point }}</span>
         </div>
@@ -102,6 +111,8 @@ export default {
     return {
       fullUrl: "",
       isAdminUser: false,
+      roomRef: {},
+      roomRefChanges: {},
       room: {
         userPoints: [],
         scoredCards: [],
@@ -112,35 +123,45 @@ export default {
     };
   },
   created() {
-    const ref = database.ref(`rooms/${this.$route.params.roomId}`);
-    ref.on("value", snapshot => {
+    this.roomRef = database.ref(`rooms/${this.$route.params.roomId}`);
+
+    this.roomRefChanges = this.roomRef.on("value", snapshot => {
       this.room = snapshot.val();
       const user = this.room.userPoints.find(
-        x => x.userId == this.$route.params.userId && x.isAdmin == true
+        x => x.userId == this.$route.params.userId
       );
-      this.isAdminUser = user ? true : false;
+
+      if (!user) {
+        this.$router.push({
+          path: `/${this.$route.params.roomId}`
+        });
+      }
+
+      this.isAdminUser = user && user.isAdmin ? true : false;
     });
     this.fullUrl = `${window.location.origin}/#/${this.$route.params.roomId}`;
   },
+  beforeDestroy() {
+    this.roomRef.off("value", this.roomRefChanges);
+  },
   methods: {
     givePoint(point) {
-      const ref = database.ref(`rooms/${this.$route.params.roomId}`);
-      ref.once("value", res => {
+      this.roomRef.once("value", res => {
         this.room = res.val();
         const index = this.room.userPoints.findIndex(
           x => x.userId == this.$route.params.userId
         );
         this.room.userPoints[index].point = point;
-        ref.update({ ...this.room });
+        this.roomRef.update({ ...this.room });
       });
     },
     final($event) {
       $event.preventDefault();
       if (!this.card.name || !this.card.point) return;
-      const ref = database.ref(`rooms/${this.$route.params.roomId}`);
-      ref.once("value", res => {
+
+      this.roomRef.once("value", res => {
         this.room = res.val();
-        this.room.scoredCards.push({ ...this.card });
+        this.room.scoredCards.splice(1, 0, { ...this.card });
 
         this.room.scoredCards[0].point = this.room.scoredCards.reduce(
           (total, item) => {
@@ -151,7 +172,7 @@ export default {
 
         this.room.userPoints.forEach(x => (x.point = ""));
         this.room.isShowPoint = false;
-        ref.update({ ...this.room });
+        this.roomRef.update({ ...this.room });
       });
       this.card = {};
     },
@@ -164,58 +185,53 @@ export default {
       }
     },
     save(user, $event) {
-      const ref = database.ref(`rooms/${this.$route.params.roomId}`);
-      ref.once("value", res => {
+      this.roomRef.once("value", res => {
         this.room = res.val();
         const index = this.room.userPoints.findIndex(
           x => x.userId == this.$route.params.userId
         );
         this.room.userPoints[index].point = $event.target.value;
         this.room.userPoints[index].isEdit = false;
-        ref.update({ ...this.room });
+        this.roomRef.update({ ...this.room });
       });
     },
     toggleShowPoint() {
-      const ref = database.ref(`rooms/${this.$route.params.roomId}`);
-      ref.once("value", res => {
+      this.roomRef.once("value", res => {
         this.room = res.val();
         this.room.isShowPoint = !this.room.isShowPoint;
-        ref.update({ ...this.room });
+        this.roomRef.update({ ...this.room });
       });
     },
     toggleAdmin(user) {
       if (this.isAdminUser && user.userId != this.$route.params.userId) {
-        const ref = database.ref(`rooms/${this.$route.params.roomId}`);
-        ref.once("value", res => {
+        this.roomRef.once("value", res => {
           this.room = res.val();
           const index = this.room.userPoints.findIndex(
             x => x.userId == user.userId
           );
           this.room.userPoints[index].isAdmin = !this.room.userPoints[index]
             .isAdmin;
-          ref.update({ ...this.room });
+          this.roomRef.update({ ...this.room });
         });
       }
     },
     cleanScores() {
-      const ref = database.ref(`rooms/${this.$route.params.roomId}`);
-      ref.once("value", res => {
+      this.roomRef.once("value", res => {
         this.room = res.val();
         this.room.userPoints.forEach(x => (x.point = ""));
         this.room.isShowPoint = false;
-        ref.update({ ...this.room });
+        this.roomRef.update({ ...this.room });
       });
     },
     remove(user) {
       if (this.isAdminUser && user.userId != this.$route.params.userId) {
-        const ref = database.ref(`rooms/${this.$route.params.roomId}`);
-        ref.once("value", res => {
+        this.roomRef.once("value", res => {
           this.room = res.val();
           const index = this.room.userPoints.findIndex(
             x => x.userId == user.userId
           );
           this.room.userPoints.splice(index, 1);
-          ref.update({ ...this.room });
+          this.roomRef.update({ ...this.room });
         });
       }
     }
@@ -224,6 +240,9 @@ export default {
 </script>
 
 <style>
+.marked-row {
+  border-left: 5px solid #42b983;
+}
 .manual-input {
   max-width: 35px;
   height: 0.9rem;
@@ -257,9 +276,12 @@ export default {
     width: 100%;
   }
   .card {
-    border-radius: 3px;
-    margin: none;
-    padding: none;
+    margin: 0.5rem !important;
+    padding: 1rem 1.5rem !important;
+  }
+
+  form {
+    margin-top: 10px;
   }
 }
 .list {
@@ -282,6 +304,7 @@ export default {
 .point {
   flex-basis: 30%;
   font-weight: bolder;
+  text-align: center;
 }
 .remove {
   flex-basis: 4%;

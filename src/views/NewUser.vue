@@ -56,24 +56,28 @@ export default {
       const ref = database.ref(`rooms/${this.$route.params.roomId}`);
       ref.once("value", res => {
         this.room = res.val();
-        const index = this.room.userPoints.findIndex(
-          x => x.userId.toLowerCase() == this.userId.toLowerCase().trim()
-        );
-        if (index >= 0) {
-          this.room.userPoints[index].name = this.name;
-        } else {
-          this.room.userPoints.push({
-            userId: this.userId,
-            name: this.name,
-            isAdmin: false,
-            isEdit: false,
-            point: ""
+        if (this.room) {
+          const index = this.room.userPoints.findIndex(
+            x => x.userId.toLowerCase() == this.userId.toLowerCase().trim()
+          );
+          if (index >= 0) {
+            this.room.userPoints[index].name = this.name;
+          } else {
+            this.room.userPoints.push({
+              userId: this.userId,
+              name: this.name,
+              isAdmin: false,
+              isEdit: false,
+              point: ""
+            });
+          }
+          ref.update({ ...this.room });
+          this.$router.push({
+            path: `/${this.$route.params.roomId}/${this.userId}`
           });
+        } else {
+          this.$router.push({ path: "/room-not-found" });
         }
-        ref.update({ ...this.room });
-      });
-      this.$router.push({
-        path: `/${this.$route.params.roomId}/${this.userId}`
       });
     },
     onChangeUser() {
