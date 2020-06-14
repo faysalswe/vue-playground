@@ -36,6 +36,7 @@
           placeholder="Point"
           name="point"
           id="point"
+          step="0.01"
         />
         <button type="submit">Final</button>
       </form>
@@ -104,6 +105,7 @@
             placeholder="Point"
             name="point"
             id="point"
+            step="0.01"
           />
           <button type="submit">Final</button>
         </form>
