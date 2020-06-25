@@ -13,17 +13,25 @@
       </div>
     </div>
     <div class="container">
-      <span v-clipboard:copy="fullUrl" class="icon-btn-lg">
-        📋
-      </span>
-      <span v-if="isAdminUser" class="icon-btn-lg" @click="cleanScores">
-        🔄
-      </span>
-      <span v-if="isAdminUser" class="icon-btn-lg" @click="toggleShowPoint">
-        {{ room.isShowPoint ? "🔓" : "🔒" }}
-      </span>
-      <form class="lg-md-display" v-if="isAdminUser" @submit="final($event)">
+      <div style="width: 50%; display: flex; justify-content: space-around;">
+        <span v-clipboard:copy="fullUrl" class="icon-btn-lg">
+          📋
+        </span>
+        <span v-if="isAdminUser" class="icon-btn-lg" @click="cleanScores">
+          🔄
+        </span>
+        <span v-if="isAdminUser" class="icon-btn-lg" @click="toggleShowPoint">
+          {{ room.isShowPoint ? "🔓" : "🔒" }}
+        </span>
+      </div>
+
+      <form
+        style="width: 50%;"
+        v-if="isAdminUser"
+        @submit="addOrUpdateCardPontSummary($event, card.index)"
+      >
         <input
+          style="width: 55%;"
           type="text"
           v-model="card.name"
           placeholder="Name"
@@ -31,6 +39,7 @@
           id="name"
         />
         <input
+          style="width: 25%;"
           type="number"
           v-model="card.point"
           placeholder="Point"
@@ -38,12 +47,21 @@
           id="point"
           step="0.01"
         />
-        <button type="submit">Final</button>
+        <button :style="card.index > 0 ? 'width: 10%;' : 'width: 20%;'">
+          💾
+        </button>
+        <button
+          v-if="card.index > 0"
+          style="width: 10%;"
+          @click="deleteSummaryCardPoint(card.index)"
+        >
+          ❌
+        </button>
       </form>
     </div>
 
     <div class="container">
-      <div v-if="room.userPoints.length" class="summury-points">
+      <div v-if="room.userPoints.length" class="summary-points">
         <h4>
           Current card points
         </h4>
@@ -109,14 +127,15 @@
           />
           <button type="submit">Final</button>
         </form>
-
         <div
           class="list"
-          v-for="(card, index) in room.scoredCards"
+          v-for="(scoredCard, index) in room.scoredCards"
           :key="index"
-          :class="{ 'marked-row': index === 0 }"
+          :style="index === card.index ? 'background-color: #42b98336;' : ''"
+          :class="{ 'marked-row': index == 0 }"
+          @click="editCardSummaryPoint(index)"
         >
-          <span>{{ card.name }}</span> <span>{{ card.point }}</span>
+          <span>{{ scoredCard.name }}</span> <span>{{ scoredCard.point }}</span>
         </div>
       </div>
     </div>
@@ -126,7 +145,7 @@
 <script>
 import { database } from "../firebase/firebase";
 export default {
-  name: "scarm-poker",
+  name: "scram-poker",
   data() {
     return {
       fullUrl: "",
@@ -139,7 +158,7 @@ export default {
         isShowPoint: false
       },
       points: [0.5, 1, 2, 3, 5, 8, 13, 21],
-      card: { name: "", point: "" }
+      card: { index: "", name: "", point: "" }
     };
   },
   created() {
@@ -175,26 +194,60 @@ export default {
         this.roomRef.update({ ...this.room });
       });
     },
-    final($event) {
+    addOrUpdateCardPontSummary($event, index) {
       $event.preventDefault();
+
       if (!this.card.name || !this.card.point) return;
 
       this.roomRef.once("value", res => {
         this.room = res.val();
-        this.room.scoredCards.splice(1, 0, { ...this.card });
 
-        this.room.scoredCards[0].point = this.room.scoredCards.reduce(
-          (total, item) => {
-            return total + Number(item.point);
-          },
-          -this.room.scoredCards[0].point
-        );
+        if (index > 0) {
+          this.room.scoredCards[0].point =
+            this.room.scoredCards[0].point - this.room.scoredCards[index].point;
+          this.room.scoredCards[index].name = this.card.name;
+          this.room.scoredCards[index].point = this.card.point;
+          this.room.scoredCards[0].point =
+            Number(this.room.scoredCards[0].point) + Number(this.card.point);
+        } else {
+          this.room.scoredCards.splice(1, 0, { ...this.card });
+          this.room.scoredCards[0].point = this.room.scoredCards.reduce(
+            (total, item) => {
+              return total + Number(item.point);
+            },
+            -this.room.scoredCards[0].point
+          );
 
-        this.room.userPoints.forEach(x => (x.point = ""));
-        this.room.isShowPoint = false;
+          this.room.userPoints.forEach(x => (x.point = ""));
+          this.room.isShowPoint = false;
+        }
         this.roomRef.update({ ...this.room });
       });
+
       this.card = {};
+    },
+    editCardSummaryPoint(index) {
+      if (index > 0 && index != this.card.index) {
+        this.roomRef.once("value", res => {
+          this.room = res.val();
+          this.card = { ...this.room.scoredCards[index], index };
+          this.roomRef.update({ ...this.room });
+        });
+      } else {
+        this.card = {};
+      }
+    },
+    deleteSummaryCardPoint(index) {
+      if (index > 0) {
+        this.roomRef.once("value", res => {
+          this.room = res.val();
+          this.room.scoredCards[0].point =
+            this.room.scoredCards[0].point - this.room.scoredCards[index].point;
+          this.room.scoredCards.splice(1, index);
+          this.roomRef.update({ ...this.room });
+        });
+        this.card = {};
+      }
     },
     onEdit(user) {
       if (this.$route.params.userId == user.userId) {
@@ -263,14 +316,17 @@ export default {
 .mobile {
   display: none;
 }
+
 .marked-row {
   border-left: 5px solid #42b983;
 }
+
 .manual-input {
   max-width: 35px;
   height: 0.9rem;
   font-size: 15px;
 }
+
 .icon-btn-sm {
   font-size: 13px;
   cursor: pointer;
@@ -288,13 +344,20 @@ export default {
   width: 100%;
 }
 
-.summury-points,
+.container {
+  display: flex;
+  justify-content: space-around;
+  flex-wrap: wrap;
+  width: 100%;
+}
+
+.summary-points,
 .user-points {
   width: 50%;
 }
 
 @media only screen and (max-width: 600px) {
-  .summury-points,
+  .summary-points,
   .user-points {
     width: 100%;
   }
@@ -305,6 +368,7 @@ export default {
   .lg-md-display {
     display: none;
   }
+
   .mobile {
     display: block;
     margin-bottom: 10px;
@@ -313,6 +377,7 @@ export default {
     margin-bottom: 10px;
   }
 }
+
 .list {
   display: flex;
   justify-content: space-between;
@@ -327,14 +392,17 @@ export default {
 .user {
   flex-basis: 6%;
 }
+
 .name {
   flex-basis: 60%;
 }
+
 .point {
   flex-basis: 30%;
   font-weight: bolder;
   text-align: center;
 }
+
 .remove {
   flex-basis: 4%;
 }
@@ -382,5 +450,13 @@ button {
 .card-point {
   color: #42b983;
   font-size: 30px;
+}
+
+.red-border {
+  border: 1px solid red;
+}
+
+.green-border {
+  border: 1px solid green;
 }
 </style>
