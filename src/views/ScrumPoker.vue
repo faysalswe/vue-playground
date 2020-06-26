@@ -14,14 +14,18 @@
     </div>
     <div class="container">
       <div style="width: 50%; display: flex; justify-content: space-around;">
-        <span v-clipboard:copy="fullUrl" class="icon-btn-lg">
-          📋
-        </span>
-        <span v-if="isAdminUser" class="icon-btn-lg" @click="cleanScores">
-          🔄
-        </span>
+        <span v-clipboard:copy="fullUrl" class="icon-btn-lg"
+          ><ion-icon name="copy-sharp"></ion-icon> Copy Link</span
+        >
+        <span v-if="isAdminUser" class="icon-btn-lg" @click="cleanScores"
+          ><ion-icon name="reload-sharp"></ion-icon> Clear</span
+        >
         <span v-if="isAdminUser" class="icon-btn-lg" @click="toggleShowPoint">
-          {{ room.isShowPoint ? "🔓" : "🔒" }}
+          <span v-if="room.isShowPoint"
+            ><ion-icon name="eye-off-sharp"></ion-icon> Invisible
+          </span>
+          <span v-else><ion-icon name="eye-sharp"></ion-icon> Visible </span>
+          All
         </span>
       </div>
 
@@ -36,7 +40,6 @@
           v-model="card.name"
           placeholder="Name"
           name="name"
-          id="name"
         />
         <input
           style="width: 25%;"
@@ -44,27 +47,25 @@
           v-model="card.point"
           placeholder="Point"
           name="point"
-          id="point"
           step="0.01"
         />
         <button :style="card.index > 0 ? 'width: 10%;' : 'width: 20%;'">
-          💾
+          <ion-icon name="save-sharp"></ion-icon>
         </button>
         <button
           v-if="card.index > 0"
           style="width: 10%;"
           @click="deleteSummaryCardPoint(card.index)"
         >
-          ❌
+          <ion-icon name="trash-sharp"></ion-icon>
         </button>
       </form>
     </div>
 
     <div class="container">
       <div v-if="room.userPoints.length" class="summary-points">
-        <h4>
-          Current card points
-        </h4>
+        <p style="font-size: 18px; font-wight: bold;">Team Points</p>
+        <p></p>
         <div
           class="list"
           v-for="(user, index) in room.userPoints"
@@ -72,7 +73,8 @@
           :class="{ 'marked-row': user.userId == $route.params.userId }"
         >
           <span class="user icon-btn-sm" @click="toggleAdmin(user)">
-            {{ user.isAdmin ? "👤" : "👥" }}
+            <ion-icon v-if="user.isAdmin" name="person"></ion-icon>
+            <ion-icon v-else name="person-outline"></ion-icon>
           </span>
           <span class="name">
             {{ user.name }}
@@ -90,42 +92,67 @@
             class="point icon-btn-sm"
             @click="onEdit(user, index)"
           >
-            {{ user.point ? user.point : "⌛️" }}
+            <span style="color: #42b983" v-if="user.point">
+              {{ user.point }}
+            </span>
+            <ion-icon
+              style="color: #f44336"
+              v-else
+              name="hourglass-sharp"
+            ></ion-icon>
           </span>
           <span v-else class="point icon-btn-sm" @click="onEdit(user, index)">
-            {{
-              user.point > 0 ? (room.isShowPoint ? user.point : "🔒") : "⌛️"
-            }}
+            <ion-icon
+              style="color: #f44336"
+              v-if="user.point <= 0"
+              name="hourglass-sharp"
+            ></ion-icon>
+            <span v-else-if="room.isShowPoint"> {{ user.point }} </span>
+            <ion-icon v-else name="eye-off-sharp"></ion-icon>
           </span>
           <span
             v-if="isAdminUser"
             class="icon-btn-sm remove"
             @click="remove(user)"
           >
-            ❌
+            <ion-icon name="trash-sharp"></ion-icon>
           </span>
         </div>
       </div>
 
       <div v-if="room.scoredCards.length" class="user-points">
-        <h4>Card points summary</h4>
-        <form class="mobile" v-if="isAdminUser" @submit="final($event)">
+        <P style="font-size: 18px; font-wight: bold;">Card Points</P>
+        <form
+          class="mobile"
+          style="width: 50%;"
+          v-if="isAdminUser"
+          @submit="addOrUpdateCardPontSummary($event, card.index)"
+        >
           <input
+            style="width: 55%;"
             type="text"
             v-model="card.name"
             placeholder="Name"
             name="name"
-            id="name"
           />
           <input
+            style="width: 25%;"
             type="number"
             v-model="card.point"
             placeholder="Point"
             name="point"
-            id="point"
             step="0.01"
           />
-          <button type="submit">Final</button>
+          <button :style="card.index > 0 ? 'width: 10%;' : 'width: 20%;'">
+            <ion-icon name="save-sharp"></ion-icon>
+          </button>
+          <button
+            v-if="card.index > 0"
+            style="width: 10%;"
+            @click="deleteSummaryCardPoint(card.index)"
+          >
+            <ion-icon name="trash-sharp"></ion-icon>
+          </button>
         </form>
         <div
           class="list"
@@ -217,9 +244,6 @@ export default {
             },
             -this.room.scoredCards[0].point
           );
-
-          this.room.userPoints.forEach(x => (x.point = ""));
-          this.room.isShowPoint = false;
         }
         this.roomRef.update({ ...this.room });
       });
@@ -227,7 +251,7 @@ export default {
       this.card = {};
     },
     editCardSummaryPoint(index) {
-      if (index > 0 && index != this.card.index) {
+      if (this.isAdminUser && index > 0 && index != this.card.index) {
         this.roomRef.once("value", res => {
           this.room = res.val();
           this.card = { ...this.room.scoredCards[index], index };
@@ -238,7 +262,7 @@ export default {
       }
     },
     deleteSummaryCardPoint(index) {
-      if (index > 0) {
+      if (this.isAdminUser && index > 0) {
         this.roomRef.once("value", res => {
           this.room = res.val();
           this.room.scoredCards[0].point =
@@ -328,13 +352,19 @@ export default {
 }
 
 .icon-btn-sm {
-  font-size: 13px;
+  font-size: 15px;
   cursor: pointer;
 }
 
 .icon-btn-lg {
   cursor: pointer;
-  font-size: 20px;
+  font-size: 17px;
+}
+
+.icon-btn-lg:hover {
+  cursor: pointer;
+  font-size: 18px;
+  color: #42b983;
 }
 
 .container {
@@ -387,6 +417,10 @@ export default {
   margin: 0.1rem;
   padding: 0.5rem;
   text-align: left;
+}
+
+.list:hover {
+  background-color: #42b98336;
 }
 
 .user {

@@ -1,18 +1,24 @@
 <template>
-  <div class="container">
-    <div>
-      <h2>{{ heading }}</h2>
-      <form @submit="newUser($event)">
-        <input
-          type="text"
-          v-model="userId"
-          @keydown="onChangeUser()"
-          placeholder="UserId"
-        />
-        <input type="text" v-model="name" placeholder="Name" />
-        <button type="submit">{{ button }}</button>
-      </form>
-    </div>
+  <div
+    class="bg-image"
+    :style="{
+      backgroundImage: 'url(' + require('@/assets/background.jpg') + ')'
+    }"
+  >
+    <form @submit="newUser($event)">
+      <input
+        type="text"
+        v-model="userId"
+        @keydown="onChangeUser()"
+        placeholder="UserId [twinkle_cse]"
+      />
+      <input
+        type="text"
+        v-model="name"
+        placeholder="Full Name [Twinkle Little Start]"
+      />
+      <button type="submit">{{ button }}</button>
+    </form>
   </div>
 </template>
 
@@ -85,26 +91,25 @@ export default {
     }
   },
   computed: {
-    heading: function() {
-      return !this.$route.params.roomId ? "Create room" : "Join room";
-    },
     button: function() {
-      return !this.$route.params.roomId ? "Create" : "Join";
+      return !this.$route.params.roomId ? "Create Room" : "Join Room";
     }
   }
 };
 </script>
 
 <style scoped>
-input {
-  font-size: 16px;
+input,
+button {
+  height: 3rem;
+  font-size: 1.1rem;
   font-weight: normal;
-  margin-left: 2px;
+  margin-left: 0.5rem;
 }
-.container {
-  display: flex;
-  align-items: center;
-  width: 100%;
-  height: 70vh;
+
+.bg-image {
+  height: 100vh;
+  width: 100vw;
+  background-repeat: no-repeat;
 }
 </style>
