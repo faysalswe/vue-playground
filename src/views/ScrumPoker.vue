@@ -1,5 +1,5 @@
 <template>
-  <div>
+  <div id="scrum-poker">
     <div class="container">
       <div
         class="card"

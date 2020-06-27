@@ -2,7 +2,7 @@
   <div
     class="bg-image"
     :style="{
-      backgroundImage: 'url(' + require('@/assets/background.jpg') + ')'
+      backgroundImage: 'url(' + require('@/assets/background.svg') + ')'
     }"
   >
     <form @submit="newUser($event)">
@@ -101,15 +101,34 @@ export default {
 <style scoped>
 input,
 button {
-  height: 3rem;
-  font-size: 1.1rem;
-  font-weight: normal;
-  margin-left: 0.5rem;
+  height: 2.5rem;
+  width: 100%;
+  font-size: 1rem;
+  margin: 0.5rem 0;
+}
+
+form {
+  display: flex;
+  flex-direction: column;
+  position: absolute;
+  top: 25vh;
+  left: 70vw;
+  right: 10vw;
+  width: 20vw;
 }
 
 .bg-image {
-  height: 100vh;
-  width: 100vw;
-  background-repeat: no-repeat;
+  height: 70vh;
+  width: 50vw;
+  margin-top: 15vh;
+  background-repeat: round;
+}
+
+@media only screen and (max-width: 1440px) {
+  .bg-image {
+    width: 65vw;
+    background-repeat: round;
+    margin-left: 1rem;
+  }
 }
 </style>
