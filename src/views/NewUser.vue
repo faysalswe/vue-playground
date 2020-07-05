@@ -9,7 +9,7 @@
       <input
         type="text"
         v-model="userId"
-        @keydown="onChangeUser()"
+        @keyup="onChangeUser()"
         placeholder="UserId [twinkle_cse]"
       />
       <input
@@ -23,7 +23,9 @@
 </template>
 
 <script>
-import { database, roomRef } from "../firebase/firebase";
+import { Room } from "../constants/ApiUrl";
+import { getData, postData, putData } from "../shared/httpHandler";
+
 export default {
   name: "join-room",
   data() {
@@ -43,44 +45,56 @@ export default {
       }
     },
     createRoom() {
-      const ref = roomRef.push({
-        userPoints: [
+      const newRoom = {
+        users: [
           {
             userId: this.userId,
             name: this.name,
-            isAdmin: true,
-            isEdit: false,
-            point: ""
+            point: null,
+            isAdmin: true
           }
         ],
-        scoredCards: [{ name: "Total Point", point: 0 }],
-        isShowPoint: false
-      });
-      this.$router.push({ path: `/${ref.key}/${this.userId}` });
+        cards: [
+          {
+            title: "Total",
+            point: 0,
+            userCardPoints: []
+          }
+        ],
+        isVisibleToAll: false
+      };
+
+      postData(Room.BASE, newRoom)
+        .then(res => {
+          this.$router.push({ path: `/${res._id}/${this.userId}` });
+        })
+        .catch(err => {
+          console.log(err);
+        });
     },
     joinNewUser() {
-      const ref = database.ref(`rooms/${this.$route.params.roomId}`);
-      ref.once("value", res => {
-        this.room = res.val();
-        if (this.room) {
-          const index = this.room.userPoints.findIndex(
+      getData(`${Room.BASE}/${this.$route.params.roomId}`).then(res => {
+        if (res) {
+          const index = res.users.findIndex(
             x => x.userId.toLowerCase() == this.userId.toLowerCase().trim()
           );
           if (index >= 0) {
-            this.room.userPoints[index].name = this.name;
+            res.users[index].name = this.name;
           } else {
-            this.room.userPoints.push({
+            res.users.push({
               userId: this.userId,
               name: this.name,
-              isAdmin: false,
-              isEdit: false,
-              point: ""
+              point: null,
+              isAdmin: true
             });
           }
-          ref.update({ ...this.room });
-          this.$router.push({
-            path: `/${this.$route.params.roomId}/${this.userId}`
-          });
+          putData(Room.BASE, res)
+            .then(res => {
+              this.$router.push({
+                path: `/${this.$route.params.roomId}/${this.userId}`
+              });
+            })
+            .catch(err => {});
         } else {
           this.$router.push({ path: "/room-not-found" });
         }

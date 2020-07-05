@@ -21,7 +21,7 @@
           ><ion-icon name="reload-sharp"></ion-icon> Clear</span
         >
         <span v-if="isAdminUser" class="icon-btn-lg" @click="toggleShowPoint">
-          <span v-if="room.isShowPoint"
+          <span v-if="room.isVisibleToAll"
             ><ion-icon name="eye-off-sharp"></ion-icon> Invisible
           </span>
           <span v-else><ion-icon name="eye-sharp"></ion-icon> Visible </span>
@@ -37,9 +37,9 @@
         <input
           style="width: 55%;"
           type="text"
-          v-model="card.name"
-          placeholder="Name"
-          name="name"
+          v-model="card.title"
+          placeholder="Title"
+          name="title"
         />
         <input
           style="width: 25%;"
@@ -63,12 +63,12 @@
     </div>
 
     <div class="container">
-      <div v-if="room.userPoints.length" class="summary-points">
+      <div v-if="room.users.length" class="summary-points">
         <p style="font-size: 18px; font-wight: bold;">Team Points</p>
         <p></p>
         <div
           class="list"
-          v-for="(user, index) in room.userPoints"
+          v-for="(user, index) in room.users"
           :key="index"
           :class="{ 'marked-row': user.userId == $route.params.userId }"
         >
@@ -107,7 +107,7 @@
               v-if="user.point <= 0"
               name="hourglass-sharp"
             ></ion-icon>
-            <span v-else-if="room.isShowPoint"> {{ user.point }} </span>
+            <span v-else-if="room.isVisibleToAll"> {{ user.point }} </span>
             <ion-icon v-else name="eye-off-sharp"></ion-icon>
           </span>
           <span
@@ -120,7 +120,7 @@
         </div>
       </div>
 
-      <div v-if="room.scoredCards.length" class="user-points">
+      <div v-if="room.cards.length" class="user-points">
         <P style="font-size: 18px; font-wight: bold;">Card Points</P>
         <form
           class="mobile"
@@ -131,9 +131,9 @@
           <input
             style="width: 55%;"
             type="text"
-            v-model="card.name"
-            placeholder="Name"
-            name="name"
+            v-model="card.title"
+            placeholder="Title"
+            name="title"
           />
           <input
             style="width: 25%;"
@@ -156,13 +156,14 @@
         </form>
         <div
           class="list"
-          v-for="(scoredCard, index) in room.scoredCards"
+          v-for="(scoredCard, index) in room.cards"
           :key="index"
           :style="index === card.index ? 'background-color: #42b98336;' : ''"
           :class="{ 'marked-row': index == 0 }"
           @click="editCardSummaryPoint(index)"
         >
-          <span>{{ scoredCard.name }}</span> <span>{{ scoredCard.point }}</span>
+          <span>{{ scoredCard.title }}</span>
+          <span>{{ scoredCard.point }}</span>
         </div>
       </div>
     </div>
@@ -170,30 +171,27 @@
 </template>
 
 <script>
-import { database } from "../firebase/firebase";
+import { Room } from "../constants/ApiUrl";
+import { getData, putData } from "../shared/httpHandler";
 export default {
   name: "scram-poker",
   data() {
     return {
       fullUrl: "",
       isAdminUser: false,
-      roomRef: {},
-      roomRefChanges: {},
       room: {
-        userPoints: [],
-        scoredCards: [],
-        isShowPoint: false
+        users: [],
+        cards: [],
+        isVisibleToAll: false
       },
       points: [0.5, 1, 2, 3, 5, 8, 13, 21],
       card: { index: "", name: "", point: "" }
     };
   },
   created() {
-    this.roomRef = database.ref(`rooms/${this.$route.params.roomId}`);
-
-    this.roomRefChanges = this.roomRef.on("value", snapshot => {
-      this.room = snapshot.val();
-      const user = this.room.userPoints.find(
+    getData(`${Room.BASE}/${this.$route.params.roomId}`).then(res => {
+      this.room = res;
+      const user = this.room.users.find(
         x => x.userId == this.$route.params.userId
       );
 
@@ -203,133 +201,104 @@ export default {
         });
       }
 
-      this.isAdminUser = user && user.isAdmin ? true : false;
+      this.isAdminUser = user && user.isAdmin;
+      this.fullUrl = `${window.location.origin}/#/${this.$route.params.roomId}`;
     });
-    this.fullUrl = `${window.location.origin}/#/${this.$route.params.roomId}`;
   },
-  beforeDestroy() {
-    this.roomRef.off("value", this.roomRefChanges);
-  },
+  beforeDestroy() {},
   methods: {
+    UpdateRoom() {
+      putData(Room.BASE, this.room)
+        .then(res => {
+          this.room = res;
+        })
+        .catch(err => {});
+    },
     givePoint(point) {
-      this.roomRef.once("value", res => {
-        this.room = res.val();
-        const index = this.room.userPoints.findIndex(
-          x => x.userId == this.$route.params.userId
-        );
-        this.room.userPoints[index].point = point;
-        this.roomRef.update({ ...this.room });
-      });
+      const index = this.room.users.findIndex(
+        x => x.userId == this.$route.params.userId
+      );
+      this.room.users[index].point = point;
+      this.UpdateRoom();
     },
     addOrUpdateCardPontSummary($event, index) {
       $event.preventDefault();
 
-      if (!this.card.name || !this.card.point) return;
+      if (!this.card.title || !this.card.point) return;
 
-      this.roomRef.once("value", res => {
-        this.room = res.val();
-
-        if (index > 0) {
-          this.room.scoredCards[0].point =
-            this.room.scoredCards[0].point - this.room.scoredCards[index].point;
-          this.room.scoredCards[index].name = this.card.name;
-          this.room.scoredCards[index].point = this.card.point;
-          this.room.scoredCards[0].point =
-            Number(this.room.scoredCards[0].point) + Number(this.card.point);
-        } else {
-          this.room.scoredCards.splice(1, 0, { ...this.card });
-          this.room.scoredCards[0].point = this.room.scoredCards.reduce(
-            (total, item) => {
-              return total + Number(item.point);
-            },
-            -this.room.scoredCards[0].point
-          );
-        }
-        this.roomRef.update({ ...this.room });
-      });
-
+      if (index > 0) {
+        this.room.cards[0].point =
+          this.room.cards[0].point - this.room.cards[index].point;
+        this.room.cards[index].title = this.card.title;
+        this.room.cards[index].point = this.card.point;
+        this.room.cards[0].point =
+          Number(this.room.cards[0].point) + Number(this.card.point);
+      } else {
+        this.room.cards.splice(1, 0, { ...this.card });
+        this.room.cards[0].point = this.room.cards.reduce((total, item) => {
+          return total + Number(item.point);
+        }, -this.room.cards[0].point);
+        this.room.cards.userCardPoints = this.room.users.map(x => ({
+          userId: x.userId,
+          point: x.point
+        }));
+        console.log(this.room, "room");
+      }
+      this.UpdateRoom();
       this.card = {};
     },
     editCardSummaryPoint(index) {
       if (this.isAdminUser && index > 0 && index != this.card.index) {
-        this.roomRef.once("value", res => {
-          this.room = res.val();
-          this.card = { ...this.room.scoredCards[index], index };
-          this.roomRef.update({ ...this.room });
-        });
+        this.card = { ...this.room.cards[index], index };
+        this.UpdateRoom();
       } else {
         this.card = {};
       }
     },
     deleteSummaryCardPoint(index) {
       if (this.isAdminUser && index > 0) {
-        this.roomRef.once("value", res => {
-          this.room = res.val();
-          this.room.scoredCards[0].point =
-            this.room.scoredCards[0].point - this.room.scoredCards[index].point;
-          this.room.scoredCards.splice(1, index);
-          this.roomRef.update({ ...this.room });
-        });
+        this.room.cards[0].point =
+          this.room.cards[0].point - this.room.cards[index].point;
+        this.room.cards.splice(1, index);
+        this.UpdateRoom();
         this.card = {};
       }
     },
     onEdit(user) {
       if (this.$route.params.userId == user.userId) {
-        const index = this.room.userPoints.findIndex(
-          x => x.userId == user.userId
-        );
-        this.room.userPoints[index].isEdit = true;
+        const index = this.room.users.findIndex(x => x.userId == user.userId);
+        this.room.users[index].isEdit = true;
       }
     },
     save(user, $event) {
-      this.roomRef.once("value", res => {
-        this.room = res.val();
-        const index = this.room.userPoints.findIndex(
-          x => x.userId == this.$route.params.userId
-        );
-        this.room.userPoints[index].point = $event.target.value;
-        this.room.userPoints[index].isEdit = false;
-        this.roomRef.update({ ...this.room });
-      });
+      const index = this.room.users.findIndex(
+        x => x.userId == this.$route.params.userId
+      );
+      this.room.users[index].point = $event.target.value;
+      this.room.users[index].isEdit = false;
+      this.UpdateRoom();
     },
     toggleShowPoint() {
-      this.roomRef.once("value", res => {
-        this.room = res.val();
-        this.room.isShowPoint = !this.room.isShowPoint;
-        this.roomRef.update({ ...this.room });
-      });
+      this.room.isVisibleToAll = !this.room.isVisibleToAll;
+      this.UpdateRoom();
     },
     toggleAdmin(user) {
       if (this.isAdminUser && user.userId != this.$route.params.userId) {
-        this.roomRef.once("value", res => {
-          this.room = res.val();
-          const index = this.room.userPoints.findIndex(
-            x => x.userId == user.userId
-          );
-          this.room.userPoints[index].isAdmin = !this.room.userPoints[index]
-            .isAdmin;
-          this.roomRef.update({ ...this.room });
-        });
+        const index = this.room.users.findIndex(x => x.userId == user.userId);
+        this.room.users[index].isAdmin = !this.room.users[index].isAdmin;
+        this.UpdateRoom();
       }
     },
     cleanScores() {
-      this.roomRef.once("value", res => {
-        this.room = res.val();
-        this.room.userPoints.forEach(x => (x.point = ""));
-        this.room.isShowPoint = false;
-        this.roomRef.update({ ...this.room });
-      });
+      this.room.users.forEach(x => (x.point = ""));
+      this.room.isVisibleToAll = false;
+      this.UpdateRoom();
     },
     remove(user) {
       if (this.isAdminUser && user.userId != this.$route.params.userId) {
-        this.roomRef.once("value", res => {
-          this.room = res.val();
-          const index = this.room.userPoints.findIndex(
-            x => x.userId == user.userId
-          );
-          this.room.userPoints.splice(index, 1);
-          this.roomRef.update({ ...this.room });
-        });
+        const index = this.room.users.findIndex(x => x.userId == user.userId);
+        this.room.users.splice(index, 1);
+        this.UpdateRoom();
       }
     }
   }
