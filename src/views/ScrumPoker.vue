@@ -61,7 +61,7 @@
         </button>
       </form>
     </div>
-
+    {{ room.cards }}
     <div class="container">
       <div v-if="room.users.length" class="summary-points">
         <p style="font-size: 18px; font-wight: bold;">Team Points</p>
@@ -204,13 +204,33 @@ export default {
       this.isAdminUser = user && user.isAdmin;
       this.fullUrl = `${window.location.origin}/#/${this.$route.params.roomId}`;
     });
+    this.initSSEEvent();
   },
   beforeDestroy() {},
   methods: {
+    initSSEEvent() {
+      const eventSource = new EventSource("http://localhost:3000/room/sse");
+      eventSource.onmessage = event => {
+        const data = JSON.parse(event.data);
+        if (data) {
+          console.log("event data", data);
+          this.room = data;
+          const user = this.room.users.find(
+            x => x.userId == this.$route.params.userId
+          );
+          this.isAdminUser = user && user.isAdmin;
+        }
+      };
+
+      eventSource.onerror = event => {};
+    },
     UpdateRoom() {
       putData(Room.BASE, this.room)
         .then(res => {
-          this.room = res;
+          if (res) {
+            this.room = res;
+            console.log(this.room, "UpdateRoom");
+          }
         })
         .catch(err => {});
     },
@@ -242,24 +262,26 @@ export default {
           userId: x.userId,
           point: x.point
         }));
-        console.log(this.room, "room");
       }
       this.UpdateRoom();
       this.card = {};
     },
     editCardSummaryPoint(index) {
+      console.log(this.room, "editCardSummaryPoint");
       if (this.isAdminUser && index > 0 && index != this.card.index) {
         this.card = { ...this.room.cards[index], index };
-        this.UpdateRoom();
+        // this.UpdateRoom();
       } else {
         this.card = {};
       }
     },
     deleteSummaryCardPoint(index) {
+      console.log(this.room, "deleteSummaryCardPoint");
       if (this.isAdminUser && index > 0) {
         this.room.cards[0].point =
           this.room.cards[0].point - this.room.cards[index].point;
         this.room.cards.splice(1, index);
+        debugger;
         this.UpdateRoom();
         this.card = {};
       }
