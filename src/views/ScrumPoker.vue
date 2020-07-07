@@ -32,7 +32,6 @@
         </span>
 
       </div>
-
       <form
         style="width: 50%;"
         v-if="isAdminUser"
@@ -185,18 +184,39 @@
           </div>
         </div>
       </div>
+
+      <modal v-if="showModal" @close="showModal = false; card.index = null;">
+        <div slot="body">
+          <div
+            class="list"
+            v-for="(scoredCard, index) in room.cards[card.index].userCardPoints"
+            :key="index"
+            :class="{ 'marked-row': index == 0 }"
+          >
+            <span> {{ scoredCard.userId }} </span>
+            <span> {{ scoredCard.point }} </span>
+          </div>
+        </div>
+        
+        <h4 slot="header"> {{ room.cards[1].title }} user points history </h4>
+      </modal>
     </div>
   </div>
 </template>
 
 <script>
+import Modal from '../shared/components/modal';
 import { Room } from "../constants/ApiUrl";
 import { getData, putData } from "../shared/httpHandler";
 export default {
   name: "scram-poker",
+  components: {
+    Modal
+  },
   data() {
     return {
       fullUrl: "",
+      showModal: false,
       isAdminUser: false,
       room: {
         users: [],
@@ -278,8 +298,9 @@ export default {
         }, -this.room.cards[0].point);
         debugger;
         this.room.cards[1].userCardPoints = this.room.users.map((x) => ({
+          name: x.name,
           userId: x.userId,
-          point: x.point,
+          point: x.point
         }));
       }
       this.UpdateRoom();
@@ -339,9 +360,9 @@ export default {
       }
     },
     showCardUserPoints(index) {
-
-    }
-    ,
+      this.showModal = !this.showModal;
+      this.card.index = index;
+    },
   },
 };
 </script>
@@ -493,13 +514,5 @@ button {
 .card-point {
   color: #42b983;
   font-size: 30px;
-}
-
-.red-border {
-  border: 1px solid red;
-}
-
-.green-border {
-  border: 1px solid green;
 }
 </style>
