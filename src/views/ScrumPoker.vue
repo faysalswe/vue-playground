@@ -61,7 +61,7 @@
         </button>
       </form>
     </div>
-    {{ room.cards }}
+
     <div class="container">
       <div v-if="room.users.length" class="summary-points">
         <p style="font-size: 18px; font-wight: bold;">Team Points</p>
@@ -158,16 +158,26 @@
           class="list"
           v-for="(scoredCard, index) in room.cards"
           :key="index"
-          :style="index === card.index ? 'background-color: #42b98336;' : ''"
           :class="{ 'marked-row': index == 0 }"
-          @click="editCardSummaryPoint(index)"
         >
-          <span>{{ scoredCard.title }}</span>
-          <span>{{ scoredCard.point }}</span>
+          <div>
+            <span> {{ scoredCard.title }} </span>
+            <span> {{ scoredCard.point }} </span>
+          </div>
+          <div>
+            <ion-icon name="create-sharp" @click="editCardSummaryPoint(index)">
+            </ion-icon>
+            <ion-icon
+              name="swap-horizontal-sharp"
+              @click="showCardUserPoints(index)"
+            >
+            </ion-icon>
+          </div>
         </div>
       </div>
     </div>
   </div>
+  <!-- :style="index === card.index ? 'background-color: #42b98336;' : ''" -->
 </template>
 
 <script>
@@ -182,22 +192,22 @@ export default {
       room: {
         users: [],
         cards: [],
-        isVisibleToAll: false
+        isVisibleToAll: false,
       },
       points: [0.5, 1, 2, 3, 5, 8, 13, 21],
-      card: { index: "", name: "", point: "" }
+      card: { index: "", name: "", point: "" },
     };
   },
   created() {
-    getData(`${Room.BASE}/${this.$route.params.roomId}`).then(res => {
+    getData(`${Room.BASE}/${this.$route.params.roomId}`).then((res) => {
       this.room = res;
       const user = this.room.users.find(
-        x => x.userId == this.$route.params.userId
+        (x) => x.userId == this.$route.params.userId
       );
 
       if (!user) {
         this.$router.push({
-          path: `/${this.$route.params.roomId}`
+          path: `/${this.$route.params.roomId}`,
         });
       }
 
@@ -213,7 +223,6 @@ export default {
       eventSource.onmessage = event => {
         const data = JSON.parse(event.data);
         if (data) {
-          console.log("event data", data);
           this.room = data;
           const user = this.room.users.find(
             x => x.userId == this.$route.params.userId
@@ -221,15 +230,15 @@ export default {
           this.isAdminUser = user && user.isAdmin;
         }
       };
-
-      eventSource.onerror = event => {};
+      eventSource.onerror = event => {
+        console.log("sse error", event);
+      };
     },
     UpdateRoom() {
       putData(Room.BASE, this.room)
         .then(res => {
           if (res) {
             this.room = res;
-            console.log(this.room, "UpdateRoom");
           }
         })
         .catch(err => {});
@@ -258,30 +267,27 @@ export default {
         this.room.cards[0].point = this.room.cards.reduce((total, item) => {
           return total + Number(item.point);
         }, -this.room.cards[0].point);
-        this.room.cards.userCardPoints = this.room.users.map(x => ({
+        debugger;
+        this.room.cards[1].userCardPoints = this.room.users.map((x) => ({
           userId: x.userId,
-          point: x.point
+          point: x.point,
         }));
       }
       this.UpdateRoom();
       this.card = {};
     },
     editCardSummaryPoint(index) {
-      console.log(this.room, "editCardSummaryPoint");
       if (this.isAdminUser && index > 0 && index != this.card.index) {
         this.card = { ...this.room.cards[index], index };
-        // this.UpdateRoom();
       } else {
         this.card = {};
       }
     },
     deleteSummaryCardPoint(index) {
-      console.log(this.room, "deleteSummaryCardPoint");
       if (this.isAdminUser && index > 0) {
         this.room.cards[0].point =
           this.room.cards[0].point - this.room.cards[index].point;
-        this.room.cards.splice(1, index);
-        debugger;
+        this.room.cards.splice(index, 1);
         this.UpdateRoom();
         this.card = {};
       }
@@ -322,8 +328,12 @@ export default {
         this.room.users.splice(index, 1);
         this.UpdateRoom();
       }
+    },
+    showCardUserPoints(index) {
+
     }
-  }
+    ,
+  },
 };
 </script>
 
