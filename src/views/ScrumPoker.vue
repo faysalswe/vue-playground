@@ -14,19 +14,23 @@
     </div>
     <div class="container">
       <div style="width: 50%; display: flex; justify-content: space-around;">
-        <span v-clipboard:copy="fullUrl" class="icon-btn-lg"
-          ><ion-icon name="copy-sharp"></ion-icon> Copy Link</span
-        >
-        <span v-if="isAdminUser" class="icon-btn-lg" @click="cleanScores"
-          ><ion-icon name="reload-sharp"></ion-icon> Clear</span
-        >
+
+        <span v-clipboard:copy="fullUrl" class="icon-btn-lg">
+          <ion-icon style="vertical-align: top;" name="copy-sharp"></ion-icon> Copy Link
+        </span>
+
+        <span v-if="isAdminUser" class="icon-btn-lg" @click="cleanScores">
+          <ion-icon style="vertical-align: top;" name="reload-sharp"></ion-icon> Clear
+        </span>
+
         <span v-if="isAdminUser" class="icon-btn-lg" @click="toggleShowPoint">
           <span v-if="room.isVisibleToAll"
-            ><ion-icon name="eye-off-sharp"></ion-icon> Invisible
+            ><ion-icon style="vertical-align: top;" name="eye-off-sharp"></ion-icon> Invisible
           </span>
           <span v-else><ion-icon name="eye-sharp"></ion-icon> Visible </span>
           All
         </span>
+
       </div>
 
       <form
@@ -160,15 +164,21 @@
           :key="index"
           :class="{ 'marked-row': index == 0 }"
         >
-          <div>
+          <div style="width: 85%; display:flex; justify-content: space-between;">
             <span> {{ scoredCard.title }} </span>
             <span> {{ scoredCard.point }} </span>
           </div>
-          <div>
-            <ion-icon name="create-sharp" @click="editCardSummaryPoint(index)">
+          <div v-if="index > 0 && isAdminUser">
+            <ion-icon
+              style="margin-right: 7px;"
+              class="icon-btn-sm"
+              :name="index != card.index ? 'create-sharp' : 'refresh-sharp'"
+              @click="editCardSummaryPoint(index)"
+            >
             </ion-icon>
             <ion-icon
-              name="swap-horizontal-sharp"
+              class="icon-btn-sm"
+              name="list-sharp"
               @click="showCardUserPoints(index)"
             >
             </ion-icon>
@@ -177,7 +187,6 @@
       </div>
     </div>
   </div>
-  <!-- :style="index === card.index ? 'background-color: #42b98336;' : ''" -->
 </template>
 
 <script>
@@ -343,7 +352,7 @@ export default {
 }
 
 .marked-row {
-  border-left: 5px solid #42b983;
+  border-left: 5px solid #42b983 !important;
 }
 
 .manual-input {
@@ -353,26 +362,24 @@ export default {
 }
 
 .icon-btn-sm {
-  font-size: 15px;
-  cursor: pointer;
+  font-size: 14px;
 }
 
-.icon-btn-lg {
+.icon-btn-sm:hover {
   cursor: pointer;
-  font-size: 17px;
-}
-
-.icon-btn-lg:hover {
-  cursor: pointer;
-  font-size: 18px;
   color: #42b983;
 }
 
-.container {
-  display: flex;
-  justify-content: space-around;
-  flex-wrap: wrap;
-  width: 100%;
+.icon-btn-lg {
+  font-size: 16px;
+  vertical-align: text-top;
+}
+
+.icon-btn-lg:hover {
+  vertical-align: text-top;
+  cursor: pointer;
+  font-size: 17px;
+  color: #42b983;
 }
 
 .container {
@@ -418,6 +425,7 @@ export default {
   margin: 0.1rem;
   padding: 0.5rem;
   text-align: left;
+  border-left: 5px solid transparent;
 }
 
 .list:hover {
