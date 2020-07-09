@@ -191,14 +191,13 @@
             class="list"
             v-for="(scoredCard, index) in room.cards[card.index].userCardPoints"
             :key="index"
-            :class="{ 'marked-row': index == 0 }"
           >
-            <span> {{ scoredCard.userId }} </span>
-            <span> {{ scoredCard.point }} </span>
+            <span>{{ scoredCard.name }}<span style="font-style:italic; font-size: 12px;"> (@{{ scoredCard.userId }})</span> </span>
+            <span>{{ scoredCard.point ? scoredCard.point : '-' }}</span>
           </div>
         </div>
         
-        <h4 slot="header"> {{ room.cards[1].title }} user points history </h4>
+        <h4 slot="header"> "{{ room.cards[index].title }}" user points </h4>
       </modal>
     </div>
   </div>
@@ -208,6 +207,7 @@
 import Modal from '../shared/components/modal';
 import { Room } from "../constants/ApiUrl";
 import { getData, putData } from "../shared/httpHandler";
+import { BASE_API_URL }  from '../environment/env.dev.js';
 export default {
   name: "scram-poker",
   components: {
@@ -225,9 +225,12 @@ export default {
       },
       points: [0.5, 1, 2, 3, 5, 8, 13, 21],
       card: { index: "", name: "", point: "" },
+      eventSource: {}
     };
   },
   created() {
+    this.eventSource = new EventSource(`${BASE_API_URL}${Room.BASE}/${Room.SSE}`);
+    console.log("readyState", this.eventSource.readyState);
     getData(`${Room.BASE}/${this.$route.params.roomId}`).then((res) => {
       this.room = res;
       const user = this.room.users.find(
@@ -242,15 +245,20 @@ export default {
 
       this.isAdminUser = user && user.isAdmin;
       this.fullUrl = `${window.location.origin}/#/${this.$route.params.roomId}`;
+    console.log("readyState", this.eventSource.readyState);
+      this.initSSEEvent();
     });
-    this.initSSEEvent();
   },
-  beforeDestroy() {},
+  beforeDestroy() {
+     this.eventSource.close();
+  },
   methods: {
     initSSEEvent() {
-      const eventSource = new EventSource("http://localhost:3000/room/sse");
-      eventSource.onmessage = event => {
+    console.log("readyState", this.eventSource.readyState);
+
+      this.eventSource.onmessage = event => {
         const data = JSON.parse(event.data);
+        console.log("sse success", data);
         if (data) {
           this.room = data;
           const user = this.room.users.find(
@@ -259,7 +267,10 @@ export default {
           this.isAdminUser = user && user.isAdmin;
         }
       };
-      eventSource.onerror = event => {
+      this.eventSource.onopen = function (evt) {
+          console.log("sse onopen", event);
+      }
+      this.eventSource.onerror = event => {
         console.log("sse error", event);
       };
     },
@@ -296,7 +307,6 @@ export default {
         this.room.cards[0].point = this.room.cards.reduce((total, item) => {
           return total + Number(item.point);
         }, -this.room.cards[0].point);
-        debugger;
         this.room.cards[1].userCardPoints = this.room.users.map((x) => ({
           name: x.name,
           userId: x.userId,

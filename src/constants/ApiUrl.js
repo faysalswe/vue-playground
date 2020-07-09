@@ -1,3 +1,4 @@
 export const Room = {
-  BASE: "room"
+  BASE: "room",
+  SSE: "sse"
 };

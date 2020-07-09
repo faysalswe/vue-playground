@@ -17,7 +17,7 @@
         v-model="name"
         placeholder="Full Name [Twinkle Little Start]"
       />
-      <button type="submit">{{ button }}</button>
+      <button :disabled="isActiveSpinner" type="submit">{{ button }} <span v-if="isActiveSpinner" class="loader">Loading...</span></button>
     </form>
   </div>
 </template>
@@ -31,7 +31,8 @@ export default {
   data() {
     return {
       userId: "",
-      name: ""
+      name: "",
+      isActiveSpinner: false
     };
   },
   methods: {
@@ -73,6 +74,7 @@ export default {
         });
     },
     joinNewUser() {
+      this.isActiveSpinner = true;
       getData(`${Room.BASE}/${this.$route.params.roomId}`).then(res => {
         if (res) {
           const index = res.users.findIndex(
@@ -85,11 +87,12 @@ export default {
               userId: this.userId,
               name: this.name,
               point: null,
-              isAdmin: true
+              isAdmin: false
             });
           }
           putData(Room.BASE, res)
             .then(res => {
+              this.isActiveSpinner = false;
               this.$router.push({
                 path: `/${this.$route.params.roomId}/${this.userId}`
               });
@@ -106,7 +109,7 @@ export default {
   },
   computed: {
     button: function() {
-      return !this.$route.params.roomId ? "Create Room" : "Join Room";
+      return !this.$route.params.roomId ? "Create" : "Join";
     }
   }
 };
