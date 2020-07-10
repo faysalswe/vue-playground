@@ -20,7 +20,7 @@ const routes = [
     component: NewUser
   },
   {
-    path: "/:roomId/:userId",
+    path: "/:roomId/board",
     component: ScrumPoker
   }
 ];

@@ -2,7 +2,7 @@
   <div
     class="bg-image"
     :style="{
-      backgroundImage: 'url(' + require('@/assets/background.svg') + ')'
+      backgroundImage: 'url(' + require('@/assets/background.svg') + ')',
     }"
   >
     <form @submit="newUser($event)">
@@ -17,7 +17,10 @@
         v-model="name"
         placeholder="Full Name [Twinkle Little Start]"
       />
-      <button :disabled="isActiveSpinner" type="submit">{{ button }} <span v-if="isActiveSpinner" class="loader">Loading...</span></button>
+      <button :disabled="isActiveSpinner" type="submit">
+        {{ button }}
+        <span v-if="isActiveSpinner" class="loader">Loading...</span>
+      </button>
     </form>
   </div>
 </template>
@@ -32,7 +35,7 @@ export default {
     return {
       userId: "",
       name: "",
-      isActiveSpinner: false
+      isActiveSpinner: false,
     };
   },
   methods: {
@@ -52,33 +55,37 @@ export default {
             userId: this.userId,
             name: this.name,
             point: null,
-            isAdmin: true
-          }
+            isAdmin: true,
+          },
         ],
         cards: [
           {
             title: "Total",
             point: 0,
-            userCardPoints: []
-          }
+            userCardPoints: [],
+          },
         ],
-        isVisibleToAll: false
+        isVisibleToAll: false,
       };
 
       postData(Room.BASE, newRoom)
-        .then(res => {
-          this.$router.push({ path: `/${res._id}/${this.userId}` });
+        .then((res) => {
+          const dbUser = res.users.find((x) => x.userId == this.userId);
+          localStorage.setItem("uoid", dbUser._id);
+          if (dbUser) {
+            this.$router.push({ path: `/${res._id}/board` });
+          }
         })
-        .catch(err => {
+        .catch((err) => {
           console.log(err);
         });
     },
     joinNewUser() {
       this.isActiveSpinner = true;
-      getData(`${Room.BASE}/${this.$route.params.roomId}`).then(res => {
+      getData(`${Room.BASE}/${this.$route.params.roomId}`).then((res) => {
         if (res) {
           const index = res.users.findIndex(
-            x => x.userId.toLowerCase() == this.userId.toLowerCase().trim()
+            (x) => x.userId.toLowerCase() == this.userId.toLowerCase().trim()
           );
           if (index >= 0) {
             res.users[index].name = this.name;
@@ -87,17 +94,21 @@ export default {
               userId: this.userId,
               name: this.name,
               point: null,
-              isAdmin: false
+              isAdmin: false,
             });
           }
           putData(Room.BASE, res)
-            .then(res => {
+            .then((res) => {
               this.isActiveSpinner = false;
-              this.$router.push({
-                path: `/${this.$route.params.roomId}/${this.userId}`
-              });
+              const dbUser = res.users.find((x) => x.userId == this.userId);
+              localStorage.setItem("uoid", dbUser._id);
+              if (dbUser) {
+                this.$router.push({
+                  path: `/${this.$route.params.roomId}/board`,
+                });
+              }
             })
-            .catch(err => {});
+            .catch((err) => {});
         } else {
           this.$router.push({ path: "/room-not-found" });
         }
@@ -105,13 +116,13 @@ export default {
     },
     onChangeUser() {
       this.userId = this.userId.trim().toLowerCase();
-    }
+    },
   },
   computed: {
     button: function() {
       return !this.$route.params.roomId ? "Create" : "Join";
-    }
-  }
+    },
+  },
 };
 </script>
 

@@ -14,23 +14,27 @@
     </div>
     <div class="container">
       <div style="width: 50%; display: flex; justify-content: space-around;">
-
         <span v-clipboard:copy="fullUrl" class="icon-btn-lg">
-          <ion-icon style="vertical-align: top;" name="copy-sharp"></ion-icon> Copy Link
+          <ion-icon style="vertical-align: top;" name="copy-sharp"></ion-icon>
+          Copy Link
         </span>
 
         <span v-if="isAdminUser" class="icon-btn-lg" @click="cleanScores">
-          <ion-icon style="vertical-align: top;" name="reload-sharp"></ion-icon> Clear
+          <ion-icon style="vertical-align: top;" name="reload-sharp"></ion-icon>
+          Clear
         </span>
 
         <span v-if="isAdminUser" class="icon-btn-lg" @click="toggleShowPoint">
           <span v-if="room.isVisibleToAll"
-            ><ion-icon style="vertical-align: top;" name="eye-off-sharp"></ion-icon> Invisible
+            ><ion-icon
+              style="vertical-align: top;"
+              name="eye-off-sharp"
+            ></ion-icon>
+            Invisible
           </span>
           <span v-else><ion-icon name="eye-sharp"></ion-icon> Visible </span>
           All
         </span>
-
       </div>
       <form
         style="width: 50%;"
@@ -73,7 +77,7 @@
           class="list"
           v-for="(user, index) in room.users"
           :key="index"
-          :class="{ 'marked-row': user.userId == $route.params.userId }"
+          :class="{ 'marked-row': user._id == uoid }"
         >
           <span class="user icon-btn-sm" @click="toggleAdmin(user)">
             <ion-icon v-if="user.isAdmin" name="person"></ion-icon>
@@ -82,7 +86,7 @@
           <span class="name">
             {{ user.name }}
           </span>
-          <span v-if="user.isEdit" class="point">
+          <span v-if="isCustomPointEnable && user._id == uoid" class="point">
             <input
               class="manual-input"
               type="number"
@@ -91,9 +95,9 @@
             />
           </span>
           <span
-            v-else-if="!user.isEdit && user.userId == $route.params.userId"
+            v-else-if="!isCustomPointEnable && user._id == uoid"
             class="point icon-btn-sm"
-            @click="onEdit(user, index)"
+            @click="onEdit(user)"
           >
             <span style="color: #42b983" v-if="user.point">
               {{ user.point }}
@@ -104,7 +108,7 @@
               name="hourglass-sharp"
             ></ion-icon>
           </span>
-          <span v-else class="point icon-btn-sm" @click="onEdit(user, index)">
+          <span v-else class="point icon-btn-sm" @click="onEdit(user)">
             <ion-icon
               style="color: #f44336"
               v-if="user.point <= 0"
@@ -163,7 +167,9 @@
           :key="index"
           :class="{ 'marked-row': index == 0 }"
         >
-          <div style="width: 85%; display:flex; justify-content: space-between;">
+          <div
+            style="width: 85%; display:flex; justify-content: space-between;"
+          >
             <span> {{ scoredCard.title }} </span>
             <span> {{ scoredCard.point }} </span>
           </div>
@@ -185,39 +191,52 @@
         </div>
       </div>
 
-      <modal v-if="showModal" @close="showModal = false; card.index = null;">
+      <modal
+        v-if="showModal"
+        @close="
+          showModal = false;
+          card.index = null;
+        "
+      >
         <div slot="body">
           <div
             class="list"
             v-for="(scoredCard, index) in room.cards[card.index].userCardPoints"
             :key="index"
           >
-            <span>{{ scoredCard.name }}<span style="font-style:italic; font-size: 12px;"> (@{{ scoredCard.userId }})</span> </span>
-            <span>{{ scoredCard.point ? scoredCard.point : '-' }}</span>
+            <span
+              >{{ scoredCard.name
+              }}<span style="font-style:italic; font-size: 12px;">
+                (@{{ scoredCard.userId }})</span
+              >
+            </span>
+            <span>{{ scoredCard.point ? scoredCard.point : "-" }}</span>
           </div>
         </div>
-        
-        <h4 slot="header"> "{{ room.cards[index].title }}" user points </h4>
+
+        <h4 slot="header">"{{ room.cards[card.index].title }}" user points</h4>
       </modal>
     </div>
   </div>
 </template>
 
 <script>
-import Modal from '../shared/components/modal';
+import Modal from "../shared/components/modal";
 import { Room } from "../constants/ApiUrl";
 import { getData, putData } from "../shared/httpHandler";
-import { BASE_API_URL }  from '../environment/env.dev.js';
+import { BASE_API_URL } from "../environment/env.dev.js";
 export default {
   name: "scram-poker",
   components: {
-    Modal
+    Modal,
   },
   data() {
     return {
       fullUrl: "",
       showModal: false,
       isAdminUser: false,
+      isCustomPointEnable: false,
+      uoid: null,
       room: {
         users: [],
         cards: [],
@@ -225,18 +244,19 @@ export default {
       },
       points: [0.5, 1, 2, 3, 5, 8, 13, 21],
       card: { index: "", name: "", point: "" },
-      eventSource: {}
+      eventSource: {},
     };
   },
   created() {
-    this.eventSource = new EventSource(`${BASE_API_URL}${Room.BASE}/${Room.SSE}`);
+    this.eventSource = new EventSource(
+      `${BASE_API_URL}${Room.BASE}/${Room.SSE}`
+    );
     console.log("readyState", this.eventSource.readyState);
+    this.uoid = localStorage.getItem("uoid");
     getData(`${Room.BASE}/${this.$route.params.roomId}`).then((res) => {
       this.room = res;
-      const user = this.room.users.find(
-        (x) => x.userId == this.$route.params.userId
-      );
-
+      const user = this.room.users.find((x) => x._id == this.uoid);
+      console.log("user", user);
       if (!user) {
         this.$router.push({
           path: `/${this.$route.params.roomId}`,
@@ -245,50 +265,48 @@ export default {
 
       this.isAdminUser = user && user.isAdmin;
       this.fullUrl = `${window.location.origin}/#/${this.$route.params.roomId}`;
-    console.log("readyState", this.eventSource.readyState);
+      console.log("readyState", this.eventSource.readyState);
       this.initSSEEvent();
     });
   },
   beforeDestroy() {
-     this.eventSource.close();
+    this.eventSource.close();
   },
   methods: {
     initSSEEvent() {
-    console.log("readyState", this.eventSource.readyState);
+      console.log("readyState", this.eventSource.readyState);
 
-      this.eventSource.onmessage = event => {
+      this.eventSource.onmessage = (event) => {
         const data = JSON.parse(event.data);
         console.log("sse success", data);
         if (data) {
           this.room = data;
-          const user = this.room.users.find(
-            x => x.userId == this.$route.params.userId
-          );
+          const user = this.room.users.find((x) => x._id == this.uoid);
           this.isAdminUser = user && user.isAdmin;
         }
       };
-      this.eventSource.onopen = function (evt) {
-          console.log("sse onopen", event);
-      }
-      this.eventSource.onerror = event => {
+      this.eventSource.onopen = function(event) {
+        console.log("sse onopen", event);
+      };
+      this.eventSource.onerror = (event) => {
         console.log("sse error", event);
       };
     },
     UpdateRoom() {
       putData(Room.BASE, this.room)
-        .then(res => {
+        .then((res) => {
           if (res) {
             this.room = res;
           }
         })
-        .catch(err => {});
+        .catch((err) => {});
     },
     givePoint(point) {
-      const index = this.room.users.findIndex(
-        x => x.userId == this.$route.params.userId
-      );
-      this.room.users[index].point = point;
-      this.UpdateRoom();
+      if (!this.room.isVisibleToAll) {
+        const index = this.room.users.findIndex((x) => x._id == this.uoid);
+        this.room.users[index].point = point;
+        this.UpdateRoom();
+      }
     },
     addOrUpdateCardPontSummary($event, index) {
       $event.preventDefault();
@@ -310,7 +328,7 @@ export default {
         this.room.cards[1].userCardPoints = this.room.users.map((x) => ({
           name: x.name,
           userId: x.userId,
-          point: x.point
+          point: x.point,
         }));
       }
       this.UpdateRoom();
@@ -333,17 +351,14 @@ export default {
       }
     },
     onEdit(user) {
-      if (this.$route.params.userId == user.userId) {
-        const index = this.room.users.findIndex(x => x.userId == user.userId);
-        this.room.users[index].isEdit = true;
+      if (!this.room.isVisibleToAll && this.uoid == user._id) {
+        this.isCustomPointEnable = true;
       }
     },
     save(user, $event) {
-      const index = this.room.users.findIndex(
-        x => x.userId == this.$route.params.userId
-      );
+      const index = this.room.users.findIndex((x) => x._id == this.uoid);
       this.room.users[index].point = $event.target.value;
-      this.room.users[index].isEdit = false;
+      this.isCustomPointEnable = false;
       this.UpdateRoom();
     },
     toggleShowPoint() {
@@ -351,20 +366,20 @@ export default {
       this.UpdateRoom();
     },
     toggleAdmin(user) {
-      if (this.isAdminUser && user.userId != this.$route.params.userId) {
-        const index = this.room.users.findIndex(x => x.userId == user.userId);
+      if (this.isAdminUser && user._id != this.uoid) {
+        const index = this.room.users.findIndex((x) => x._id == user._id);
         this.room.users[index].isAdmin = !this.room.users[index].isAdmin;
         this.UpdateRoom();
       }
     },
     cleanScores() {
-      this.room.users.forEach(x => (x.point = ""));
+      this.room.users.forEach((x) => (x.point = ""));
       this.room.isVisibleToAll = false;
       this.UpdateRoom();
     },
     remove(user) {
-      if (this.isAdminUser && user.userId != this.$route.params.userId) {
-        const index = this.room.users.findIndex(x => x.userId == user.userId);
+      if (this.isAdminUser && user._id != this.uoid) {
+        const index = this.room.users.findIndex((x) => x._id == user._id);
         this.room.users.splice(index, 1);
         this.UpdateRoom();
       }

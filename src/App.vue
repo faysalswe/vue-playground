@@ -24,10 +24,10 @@
   font-size: 10px;
   position: relative;
   text-indent: -9999em;
-  border-top: .3em solid rgba(0,107,71, 0.2);
-  border-right: .3em solid rgba(0,107,71, 0.2);
-  border-bottom: .3em solid rgba(0,107,71, 0.2);
-  border-left: .3em solid #006b47;
+  border-top: 0.3em solid rgba(0, 107, 71, 0.2);
+  border-right: 0.3em solid rgba(0, 107, 71, 0.2);
+  border-bottom: 0.3em solid rgba(0, 107, 71, 0.2);
+  border-left: 0.3em solid #006b47;
   -webkit-transform: translateZ(0);
   -ms-transform: translateZ(0);
   transform: translateZ(0);
@@ -54,5 +54,4 @@
     transform: rotate(360deg);
   }
 }
-
 </style>
