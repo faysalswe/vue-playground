@@ -248,24 +248,20 @@ export default {
     };
   },
   created() {
-    this.eventSource = new EventSource(
-      `${BASE_API_URL}${Room.BASE}/${Room.SSE}`
-    );
-    console.log("readyState", this.eventSource.readyState);
     this.uoid = localStorage.getItem("uoid");
+    this.eventSource = new EventSource(
+      `${BASE_API_URL}${Room.BASE}/${Room.SSE}/${this.uoid}`
+    );
     getData(`${Room.BASE}/${this.$route.params.roomId}`).then((res) => {
       this.room = res;
       const user = this.room.users.find((x) => x._id == this.uoid);
-      console.log("user", user);
       if (!user) {
         this.$router.push({
           path: `/${this.$route.params.roomId}`,
         });
       }
-
       this.isAdminUser = user && user.isAdmin;
       this.fullUrl = `${window.location.origin}/#/${this.$route.params.roomId}`;
-      console.log("readyState", this.eventSource.readyState);
       this.initSSEEvent();
     });
   },
@@ -274,8 +270,6 @@ export default {
   },
   methods: {
     initSSEEvent() {
-      console.log("readyState", this.eventSource.readyState);
-
       this.eventSource.onmessage = (event) => {
         const data = JSON.parse(event.data);
         console.log("sse success", data);
@@ -285,11 +279,11 @@ export default {
           this.isAdminUser = user && user.isAdmin;
         }
       };
-      this.eventSource.onopen = function(event) {
-        console.log("sse onopen", event);
-      };
+      // this.eventSource.onopen = function(event) {
+      //   console.log("sse onopen", event);
+      // };
       this.eventSource.onerror = (event) => {
-        console.log("sse error", event);
+        console.error("sse error", event);
       };
     },
     UpdateRoom() {
