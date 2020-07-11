@@ -1,5 +1,5 @@
 import axios from "axios";
-import { BASE_API_URL } from "../environment/env.dev";
+import { BASE_API_URL } from "../constants/ApiUrl";
 
 export const getData = url => {
   return axios({

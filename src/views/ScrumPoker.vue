@@ -222,9 +222,9 @@
 
 <script>
 import Modal from "../shared/components/modal";
-import { Room } from "../constants/ApiUrl";
+import { BASE_API_URL, Room } from "../constants/ApiUrl";
 import { getData, putData } from "../shared/httpHandler";
-import { BASE_API_URL } from "../environment/env.dev.js";
+
 export default {
   name: "scram-poker",
   components: {
