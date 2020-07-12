@@ -267,7 +267,7 @@ export default {
           this.room = res.val();
           this.room.scoredCards[0].point =
             this.room.scoredCards[0].point - this.room.scoredCards[index].point;
-          this.room.scoredCards.splice(1, index);
+          this.room.scoredCards.splice(index, 1);
           this.roomRef.update({ ...this.room });
         });
         this.card = {};
