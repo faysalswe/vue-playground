@@ -67,9 +67,10 @@ export default {
         ],
         isVisibleToAll: false,
       };
-
+      this.isActiveSpinner = true;
       postData(Room.BASE, newRoom)
         .then((res) => {
+          this.isActiveSpinner = false;
           const dbUser = res.users.find((x) => x.userId == this.userId);
           localStorage.setItem("uoid", dbUser._id);
           if (dbUser) {
