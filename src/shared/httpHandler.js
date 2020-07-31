@@ -1,5 +1,5 @@
 import axios from "axios";
-import { BASE_API_URL } from "../constants/ApiUrl";
+import { API_URI } from "../constants/ApiUrl";
 
 export const getData = url => {
   return axios({
@@ -29,7 +29,7 @@ export const putData = (url, data) => {
 };
 
 axios.interceptors.request.use(function(request) {
-  request.baseURL = BASE_API_URL;
+  request.baseURL = API_URI;
   request.headers = {
     "Content-Type": "application/json",
     Authorization: `JWT ${getToken()}`

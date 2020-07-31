@@ -223,7 +223,7 @@
 
 <script>
 import Modal from "../shared/components/modal";
-import { BASE_API_URL, Room } from "../constants/ApiUrl";
+import { API_URI, Room } from "../constants/ApiUrl";
 import { getData, putData } from "../shared/httpHandler";
 
 export default {
@@ -251,7 +251,7 @@ export default {
   created() {
     this.uoid = sessionStorage.getItem("uoid");
     this.eventSource = new EventSource(
-      `${BASE_API_URL}${Room.BASE}/${Room.SSE}/${this.$route.params.roomId}/${this.uoid}`
+      `${API_URI}${Room.BASE}/${Room.SSE}/${this.$route.params.roomId}/${this.uoid}`
     );
     getData(`${Room.BASE}/${this.$route.params.roomId}`)
       .then((res) => {
