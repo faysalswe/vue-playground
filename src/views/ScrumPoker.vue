@@ -37,6 +37,7 @@
         </span>
       </div>
       <form
+        id="lg-form"
         style="width: 50%;"
         v-if="isAdminUser"
         @submit="addOrUpdateCardPontSummary($event, card.index)"
@@ -130,7 +131,7 @@
       <div v-if="room.cards.length" class="user-points">
         <P style="font-size: 18px; font-wight: bold;">Card Points</P>
         <form
-          class="mobile"
+          id="sm-form"
           style="width: 50%;"
           v-if="isAdminUser"
           @submit="addOrUpdateCardPontSummary($event, card.index)"
@@ -244,35 +245,42 @@ export default {
       },
       points: [0.5, 1, 2, 3, 5, 8, 13, 21],
       card: { index: "", name: "", point: "" },
-      eventSource: {},
+      eventSource: null,
     };
   },
   created() {
-    this.uoid = localStorage.getItem("uoid");
+    this.uoid = sessionStorage.getItem("uoid");
     this.eventSource = new EventSource(
       `${BASE_API_URL}${Room.BASE}/${Room.SSE}/${this.$route.params.roomId}/${this.uoid}`
     );
-    getData(`${Room.BASE}/${this.$route.params.roomId}`).then((res) => {
-      this.room = res;
-      const user = this.room.users.find((x) => x._id == this.uoid);
-      if (!user) {
-        this.$router.push({
-          path: `/${this.$route.params.roomId}`,
-        });
-      }
-      this.isAdminUser = user && user.isAdmin;
-      this.fullUrl = `${window.location.origin}/#/${this.$route.params.roomId}`;
-      this.initSSEEvent();
-    });
+    getData(`${Room.BASE}/${this.$route.params.roomId}`)
+      .then((res) => {
+        this.room = res;
+        const user = this.room.users.find((x) => x._id == this.uoid);
+        if (!user) {
+          this.$router.push({
+            path: `/${this.$route.params.roomId}`,
+          });
+        }
+        this.isAdminUser = user && user.isAdmin;
+        this.fullUrl = `${window.location.origin}/#/${this.$route.params.roomId}`;
+        this.initSSEEvent();
+      })
+      .catch((err) => {
+        this.$router.push({ path: "/room-not-found" });
+      });
+
   },
   beforeDestroy() {
-    this.eventSource.close();
+    if (this.eventSource) {
+      this.eventSource.close();
+    }
   },
   methods: {
     initSSEEvent() {
       this.eventSource.onmessage = (event) => {
         const data = JSON.parse(event.data);
-        console.log("sse success", data);
+        console.log("event data", data);
         if (data) {
           this.room = data;
           const user = this.room.users.find((x) => x._id == this.uoid);
@@ -387,10 +395,6 @@ export default {
 </script>
 
 <style>
-.mobile {
-  display: none;
-}
-
 .marked-row {
   border-left: 5px solid #42b983 !important;
 }
@@ -433,7 +437,9 @@ export default {
 .user-points {
   width: 50%;
 }
-
+#sm-form {
+  display: none;
+}
 @media only screen and (max-width: 600px) {
   .summary-points,
   .user-points {
@@ -443,15 +449,13 @@ export default {
     margin: 0.5rem !important;
     padding: 1rem 1.5rem !important;
   }
-  .lg-md-display {
+  #lg-form {
     display: none;
   }
 
-  .mobile {
+  #sm-form {
     display: block;
-    margin-bottom: 10px;
-  }
-  form > * {
+    width: 100% !important;
     margin-bottom: 10px;
   }
 }
@@ -502,6 +506,7 @@ button {
   width: 100%;
   height: 1.9rem;
   border: 1px solid #42b983;
+  border-radius: 2px;
 }
 
 input {
@@ -509,12 +514,15 @@ input {
 }
 
 button {
-  background-color: #42b983;
   font-size: 16px;
   box-shadow: 0px 1px 2px 1px rgba(0, 0, 0, 0.2);
   transition: 0.3s;
-  border-radius: 2px;
+
   cursor: pointer;
+  vertical-align: top;
+}
+button:hover {
+  background-color: #42b983;
 }
 
 .card {

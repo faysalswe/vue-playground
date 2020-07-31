@@ -10,12 +10,12 @@
         type="text"
         v-model="userId"
         @keyup="onChangeUser()"
-        placeholder="UserId [twinkle_cse]"
+        placeholder="User Id [ ex. john_cse ]"
       />
       <input
         type="text"
         v-model="name"
-        placeholder="Full Name [Twinkle Little Start]"
+        placeholder="Display Name [ ex. Jhon Doe ]"
       />
       <button :disabled="isActiveSpinner" type="submit">
         {{ button }}
@@ -72,7 +72,7 @@ export default {
         .then((res) => {
           this.isActiveSpinner = false;
           const dbUser = res.users.find((x) => x.userId == this.userId);
-          localStorage.setItem("uoid", dbUser._id);
+          sessionStorage.setItem("uoid", dbUser._id);
           if (dbUser) {
             this.$router.push({ path: `/${res._id}/board` });
           }
@@ -83,8 +83,8 @@ export default {
     },
     joinNewUser() {
       this.isActiveSpinner = true;
-      getData(`${Room.BASE}/${this.$route.params.roomId}`).then((res) => {
-        if (res) {
+      getData(`${Room.BASE}/${this.$route.params.roomId}`)
+        .then((res) => {
           const index = res.users.findIndex(
             (x) => x.userId.toLowerCase() == this.userId.toLowerCase().trim()
           );
@@ -98,22 +98,21 @@ export default {
               isAdmin: false,
             });
           }
-          putData(Room.BASE, res)
-            .then((res) => {
-              this.isActiveSpinner = false;
-              const dbUser = res.users.find((x) => x.userId == this.userId);
-              localStorage.setItem("uoid", dbUser._id);
-              if (dbUser) {
-                this.$router.push({
-                  path: `/${this.$route.params.roomId}/board`,
-                });
-              }
-            })
-            .catch((err) => {});
-        } else {
+          putData(Room.BASE, res).then((res) => {
+            this.isActiveSpinner = false;
+            const dbUser = res.users.find((x) => x.userId == this.userId);
+            sessionStorage.setItem("uoid", dbUser._id);
+            if (dbUser) {
+              this.$router.push({
+                path: `/${this.$route.params.roomId}/board`,
+              });
+            }
+          });
+        })
+        .catch((err) => {
+          this.isActiveSpinner = false;
           this.$router.push({ path: "/room-not-found" });
-        }
-      });
+        });
     },
     onChangeUser() {
       this.userId = this.userId.trim().toLowerCase();
@@ -158,6 +157,17 @@ form {
     width: 65vw;
     background-repeat: round;
     margin-left: 1rem;
+  }
+}
+@media only screen and (max-width: 600px) {
+  form {
+    top: 10vh;
+    left: 20vw;
+    right: 20vw;
+    width: 60vw;
+  }
+  .bg-image {
+    margin-left: 3.5rem;
   }
 }
 </style>
