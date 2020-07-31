@@ -10,12 +10,12 @@
         type="text"
         v-model="userId"
         @keyup="onChangeUser()"
-        placeholder="User Id [ ex. john_cse ]"
+        placeholder="User Id [ ex. larry_page]"
       />
       <input
         type="text"
         v-model="name"
-        placeholder="Display Name [ ex. Jhon Doe ]"
+        placeholder="Display Name [ ex. Larry Page ]"
       />
       <button :disabled="isActiveSpinner" type="submit">
         {{ button }}
@@ -78,7 +78,7 @@ export default {
           }
         })
         .catch((err) => {
-          console.log(err);
+          this.isActiveSpinner = false;
         });
     },
     joinNewUser() {
