@@ -250,7 +250,7 @@ export default {
   created() {
     this.uoid = localStorage.getItem("uoid");
     this.eventSource = new EventSource(
-      `${BASE_API_URL}${Room.BASE}/${Room.SSE}/${this.uoid}`
+      `${BASE_API_URL}${Room.BASE}/${Room.SSE}/${this.$route.params.roomId}/${this.uoid}`
     );
     getData(`${Room.BASE}/${this.$route.params.roomId}`).then((res) => {
       this.room = res;
