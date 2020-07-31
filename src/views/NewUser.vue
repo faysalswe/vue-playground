@@ -1,27 +1,52 @@
 <template>
-  <div
-    class="bg-image"
-    :style="{
-      backgroundImage: 'url(' + require('@/assets/background.svg') + ')',
-    }"
-  >
-    <form @submit="newUser($event)">
-      <input
-        type="text"
-        v-model="userId"
-        @keyup="onChangeUser()"
-        placeholder="User Id [ ex. larry_page]"
-      />
-      <input
-        type="text"
-        v-model="name"
-        placeholder="Display Name [ ex. Larry Page ]"
-      />
-      <button :disabled="isActiveSpinner" type="submit">
-        {{ button }}
-        <span v-if="isActiveSpinner" class="loader">Loading...</span>
-      </button>
-    </form>
+  <div>
+    <div
+      class="bg-image"
+      :style="{
+        backgroundImage: 'url(' + require('@/assets/background.svg') + ')',
+      }"
+    >
+      <form @submit="newUser($event)">
+        <input
+          type="text"
+          v-model="userId"
+          @keyup="onChangeUser()"
+          placeholder="User Id [ ex. larry_page]"
+        />
+        <input
+          type="text"
+          v-model="name"
+          placeholder="Display Name [ ex. Larry Page ]"
+        />
+        <button :disabled="isActiveSpinner" type="submit">
+          {{ button }}
+          <span v-if="isActiveSpinner" class="loader">Loading...</span>
+        </button>
+      </form>
+    </div>
+    <div>
+      <p>
+        Build with
+        <a
+          href="https://developer.mozilla.org/en-US/docs/Web/API/Server-sent_events"
+          target="_blank"
+          >SSE</a
+        >&nbsp;&nbsp;
+        <a href="https://vuejs.org/" target="_blank">Vue.js</a>&nbsp;&nbsp;
+        <a href="https://nestjs.com/" target="_blank">NesJS</a>&nbsp;&nbsp;
+        <a href="https://www.mongodb.com/" target="_blank">MongoDB</a
+        >&nbsp;&nbsp;
+      </p>
+      <p>
+        Hosting provider
+        <a href="https://www.netlify.com/" target="_blank">netlify</a
+        >&nbsp;&nbsp;
+        <a href="https://www.heroku.com/" target="_blank">HEROKU</a>&nbsp;&nbsp;
+        <a href="https://www.mongodb.com/cloud/atlas" target="_blank"
+          >MongoDB Atlas</a
+        >&nbsp;
+      </p>
+    </div>
   </div>
 </template>
 

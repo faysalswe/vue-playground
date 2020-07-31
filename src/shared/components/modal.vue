@@ -1,35 +1,35 @@
 <template>
-<div id="modal-template">
-<transition name="modal">
-        <div class="modal-mask">
-          <div class="modal-wrapper">
-            <div class="modal-container">
-              <div class="modal-header">
-                <ion-icon class="modal-default-button" name="close-sharp" @click="$emit('close')"></ion-icon>
-                <slot name="header">
-                 
-                </slot>
-              </div>
+  <div id="modal-template">
+    <transition name="modal">
+      <div class="modal-mask">
+        <div class="modal-wrapper">
+          <div class="modal-container">
+            <div class="modal-header">
+              <ion-icon
+                class="modal-default-button"
+                name="close-sharp"
+                @click="$emit('close')"
+              ></ion-icon>
+              <slot name="header"> </slot>
+            </div>
 
-              <div class="modal-body">
-                <slot name="body">
-                </slot>
-              </div>
+            <div class="modal-body">
+              <slot name="body"> </slot>
+            </div>
 
-              <div class="modal-footer">
-                <slot name="footer">
-                </slot>
-              </div>
+            <div class="modal-footer">
+              <slot name="footer"> </slot>
             </div>
           </div>
         </div>
-      </transition>
-</div>
+      </div>
+    </transition>
+  </div>
 </template>
 <script>
 export default {
-  name: "scram-poker"
-}
+  name: "scram-poker",
+};
 </script>
 <style>
 .modal-mask {
@@ -62,7 +62,6 @@ export default {
 
 .modal-header h4 {
   margin-top: 0;
- 
 }
 
 .modal-body {
@@ -73,15 +72,6 @@ export default {
   float: right;
   color: red;
 }
-
-/*
- * The following styles are auto-applied to elements with
- * transition="modal" when their visibility is toggled
- * by Vue.js.
- *
- * You can easily play with the modal transition by editing
- * these styles.
- */
 
 .modal-enter {
   opacity: 0;
@@ -95,5 +85,11 @@ export default {
 .modal-leave-active .modal-container {
   -webkit-transform: scale(1.1);
   transform: scale(1.1);
+}
+
+@media only screen and (max-width: 600px) {
+  .modal-container {
+    width: unset;
+  }
 }
 </style>
